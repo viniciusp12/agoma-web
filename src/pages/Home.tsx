@@ -25,67 +25,52 @@ export default function Home() {
   return (
     <div>
       {/* ── HERO ────────────────────────────────────────────────── */}
-      <section className="relative min-h-[92vh] flex flex-col items-center justify-center text-center px-5 overflow-hidden">
-
-        {/* Background video — fallback: foto do burger */}
-        <video
-          autoPlay
-          muted
-          loop
-          playsInline
-          poster="/assets/images/IMG_6704.jpg"
-          className="absolute inset-0 w-full h-full object-cover"
-        >
-          <source src="/assets/videos/hero.mp4" type="video/mp4" />
-        </video>
-
-        {/* Gradient overlay */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background: 'linear-gradient(to bottom, rgba(10,20,9,0.68) 0%, rgba(10,20,9,0.45) 50%, rgba(10,20,9,0.80) 100%)',
-          }}
-        />
-
-        {/* Content */}
-        <div className="relative z-10 flex flex-col items-center">
-
-          {/* Logo */}
-          <div className="animate-fade-up" style={{ animationDelay: '0.1s', opacity: 0 }}>
-            <img
-              src="/assets/logo/logo-light.png"
-              alt="AGOMA. Street Food"
-              className="h-64 md:h-72 w-auto mx-auto mb-6 brightness-0 invert opacity-95 drop-shadow-2xl"
-            />
-          </div>
-
-          {/* Tagline */}
-          <div className="animate-fade-up max-w-xl" style={{ animationDelay: '0.3s', opacity: 0 }}>
-            <p className="text-[#F5F0E6]/80 text-base md:text-lg leading-relaxed mb-8">
-              Lanchonete artesanal com sanduíches feitos com paixão e ingredientes premium.
-              Cada mordida é uma experiência única.
-            </p>
-          </div>
-
-          {/* CTA buttons */}
-          <div className="animate-fade-up flex flex-col sm:flex-row gap-3" style={{ animationDelay: '0.5s', opacity: 0 }}>
-            <Link
-              to="/cardapio"
-              className="flex items-center justify-center gap-2 bg-[#C4A044] hover:bg-[#D4B558] text-[#1A2E17] font-bold px-8 py-3.5 rounded-full text-sm tracking-wide transition-all hover:-translate-y-0.5 shadow-lg"
-            >
-              Ver Cardápio <ChevronRight size={18} />
-            </Link>
-            <a
-              href="https://wa.me/5511988381411"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 bg-white/15 hover:bg-white/25 backdrop-blur border border-white/30 text-white font-semibold px-8 py-3.5 rounded-full text-sm tracking-wide transition-all hover:-translate-y-0.5"
-            >
-              Pedir pelo WhatsApp
-            </a>
-          </div>
-
+      <section
+        className="relative min-h-[92vh] flex flex-col items-center justify-center text-center px-5 overflow-hidden"
+        style={{
+          backgroundImage: `
+            linear-gradient(to bottom, rgba(10,20,9,0.72) 0%, rgba(10,20,9,0.55) 60%, rgba(10,20,9,0.85) 100%),
+            url('/assets/images/IMG_6704.jpg')
+          `,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      >
+        {/* Logo */}
+        <div className="animate-fade-up" style={{ animationDelay: '0.1s', opacity: 0 }}>
+          <img
+            src="/assets/logo/logo-light.png"
+            alt="AGOMA. Street Food"
+            className="h-64 md:h-72 w-auto mx-auto mb-6 brightness-0 invert opacity-95 drop-shadow-2xl"
+          />
         </div>
+
+        {/* Tagline */}
+        <div className="animate-fade-up max-w-xl" style={{ animationDelay: '0.3s', opacity: 0 }}>
+          <p className="text-[#F5F0E6]/80 text-base md:text-lg leading-relaxed mb-8">
+            Lanchonete artesanal com sanduíches feitos com paixão e ingredientes premium.
+            Cada mordida é uma experiência única.
+          </p>
+        </div>
+
+        {/* CTA buttons */}
+        <div className="animate-fade-up flex flex-col sm:flex-row gap-3" style={{ animationDelay: '0.5s', opacity: 0 }}>
+          <Link
+            to="/cardapio"
+            className="flex items-center justify-center gap-2 bg-[#C4A044] hover:bg-[#D4B558] text-[#1A2E17] font-bold px-8 py-3.5 rounded-full text-sm tracking-wide transition-all hover:-translate-y-0.5 shadow-lg"
+          >
+            Ver Cardápio <ChevronRight size={18} />
+          </Link>
+          <a
+            href="https://wa.me/5511988381411"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 bg-white/15 hover:bg-white/25 backdrop-blur border border-white/30 text-white font-semibold px-8 py-3.5 rounded-full text-sm tracking-wide transition-all hover:-translate-y-0.5"
+          >
+            Pedir pelo WhatsApp
+          </a>
+        </div>
+
       </section>
 
       {/* ── INFO BAR ─────────────────────────────────────────────── */}
