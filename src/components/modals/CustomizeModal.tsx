@@ -72,6 +72,9 @@ export default function CustomizeModal() {
   const showAdditionals = safeItem.category !== 'bebidas'
     && safeItem.category !== 'adicionais'
     && safeItem.category !== 'sobremesas';
+
+  const maxAdd     = safeItem.maxAdditionals ?? Infinity;
+  const addLimitHit = additionals.length >= maxAdd;
   const showCombo       = !!safeItem.canBeCombo;
   const showMeat        = !!safeItem.hasMeatPoint;
 
@@ -225,18 +228,46 @@ export default function CustomizeModal() {
           {/* ── Adicionais ── */}
           {showAdditionals && (
             <div>
-              <SectionTitle title="Adicionais" subtitle="Opcional" />
+              <div className="flex items-baseline justify-between mb-3">
+                <div className="flex items-baseline gap-2">
+                  <h3 className="font-bold text-[#1A1A1A] text-sm">Adicionais</h3>
+                  <span className="text-xs text-gray-400">Opcional</span>
+                </div>
+                {maxAdd !== Infinity && (
+                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                    addLimitHit
+                      ? 'bg-red-100 text-red-600'
+                      : 'bg-gray-100 text-gray-500'
+                  }`}>
+                    {additionals.length}/{maxAdd}
+                  </span>
+                )}
+              </div>
+
+              {addLimitHit && (
+                <p className="text-xs text-red-500 bg-red-50 px-3 py-2 rounded-lg mb-2">
+                  Limite de {maxAdd} adicionais atingido
+                </p>
+              )}
+
               <div className="flex flex-col gap-2">
                 {AVAILABLE_ADDITIONALS.map((add) => {
-                  const checked = !!additionals.find((a) => a.id === add.id);
+                  const checked  = !!additionals.find((a) => a.id === add.id);
+                  const disabled = !checked && addLimitHit;
                   return (
                     <label key={add.id}
-                      className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
-                        checked ? 'border-[#1A2E17] bg-[#1A2E17]/5' : 'border-gray-100 hover:border-gray-200'
+                      className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${
+                        disabled
+                          ? 'border-gray-100 opacity-40 cursor-not-allowed'
+                          : checked
+                            ? 'border-[#1A2E17] bg-[#1A2E17]/5 cursor-pointer'
+                            : 'border-gray-100 hover:border-gray-200 cursor-pointer'
                       }`}
                     >
                       <input type="checkbox" className="sr-only"
-                        checked={checked} onChange={() => toggleAdditional(add)} />
+                        checked={checked}
+                        disabled={disabled}
+                        onChange={() => !disabled && toggleAdditional(add)} />
                       <span className={`flex-1 font-medium text-sm ${checked ? 'text-[#1A2E17]' : 'text-gray-700'}`}>
                         {add.name}
                       </span>

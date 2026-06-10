@@ -6,8 +6,9 @@ export interface MenuItem {
   image?: string;
   badge?: string;
   category: MenuCategory;
-  hasMeatPoint?: boolean;   // pede ponto da carne
-  canBeCombo?: boolean;     // pode virar combo +R$16
+  hasMeatPoint?: boolean;    // pede ponto da carne
+  canBeCombo?: boolean;      // pode virar combo +R$16
+  maxAdditionals?: number;   // limite de adicionais (undefined = sem limite)
 }
 
 export type MenuCategory =

@@ -5,15 +5,16 @@ import type { MenuItem } from '../types';
 /** Converte linha do Supabase → MenuItem usado pelos componentes */
 function toMenuItem(row: DBMenuItem): MenuItem {
   return {
-    id:           row.external_id || row.id,
-    name:         row.name,
-    description:  row.description ?? '',
-    price:        Number(row.price),
-    category:     row.category as MenuItem['category'],
-    image:        row.image_url ?? undefined,
-    badge:        row.badge ?? undefined,
-    hasMeatPoint: row.has_meat_point,
-    canBeCombo:   row.can_be_combo,
+    id:              row.external_id || row.id,
+    name:            row.name,
+    description:     row.description ?? '',
+    price:           Number(row.price),
+    category:        row.category as MenuItem['category'],
+    image:           row.image_url ?? undefined,
+    badge:           row.badge ?? undefined,
+    hasMeatPoint:    row.has_meat_point,
+    canBeCombo:      row.can_be_combo,
+    maxAdditionals:  row.max_additionals,
   };
 }
 
