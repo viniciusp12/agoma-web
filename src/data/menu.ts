@@ -205,24 +205,27 @@ export const MENU_ITEMS: MenuItem[] = [
   },
 
   // ── SOBREMESAS ───────────────────────────────────────────────────
-  { id: 'sob-brig-nutella',   category: 'sobremesas', name: 'Brigadeiro Nutella',           description: 'Com brownie.',                    price: 7  },
-  { id: 'sob-brig-ninho',     category: 'sobremesas', name: 'Brigadeiro Ninho',              description: 'Com frutas vermelhas.',           price: 8  },
-  { id: 'sob-brownie',        category: 'sobremesas', name: 'Brownie',                       description: 'O clássico.',                     price: 15 },
-  { id: 'sob-brownie-cob',    category: 'sobremesas', name: 'Brownie c/ Cobertura',          description: 'Brownie com cobertura especial.',  price: 26 },
-  { id: 'sob-croa-nutella',   category: 'sobremesas', name: 'Croissant Nutella',             description: 'Croissant recheado com nutella.',  price: 23 },
-  { id: 'sob-croa-nut-sorv',  category: 'sobremesas', name: 'Croissant Nutella c/ Sorvete', description: 'Croissant nutella com sorvete.',   price: 29 },
-  { id: 'sob-croa-ninho',     category: 'sobremesas', name: 'Croissant Ninho',               description: 'Com frutas vermelhas.',           price: 24 },
+  { id: 'sob-brig-nutella',   category: 'sobremesas', name: 'Brigadeiro Nutella',           description: 'Com brownie.',                     price: 7  },
+  { id: 'sob-brig-ninho',     category: 'sobremesas', name: 'Brigadeiro Ninho',              description: 'Com frutas vermelhas.',            price: 8  },
+  { id: 'sob-brownie',        category: 'sobremesas', name: 'Brownie',                       description: 'O clássico.',                      price: 15 },
+  { id: 'sob-brownie-cob',    category: 'sobremesas', name: 'Brownie c/ Cobertura',          description: 'Brownie com cobertura especial.',   price: 26 },
+  { id: 'sob-croa-nutella',   category: 'sobremesas', name: 'Croissant Nutella',             description: 'Croissant recheado com nutella.',   price: 23 },
+  { id: 'sob-croa-nut-sorv',  category: 'sobremesas', name: 'Croissant Nutella c/ Sorvete', description: 'Croissant nutella com sorvete.',    price: 29 },
+  { id: 'sob-croa-ninho',     category: 'sobremesas', name: 'Croissant Ninho',               description: 'Com frutas vermelhas.',            price: 24 },
+  { id: 'sob-milk-brow',      category: 'sobremesas', name: 'Milkshake Brownie',             description: '',                                 price: 28 },
+  { id: 'sob-milk-nut',       category: 'sobremesas', name: 'Milkshake Nutella',             description: '',                                 price: 31 },
+  { id: 'sob-milk-ovo',       category: 'sobremesas', name: 'Milkshake Ovomaltine',          description: '',                                 price: 29 },
+  { id: 'sob-milk-brow-nut',  category: 'sobremesas', name: 'Milkshake Nutella e Brownie',   description: '',                                 price: 33 },
 
   // ── BEBIDAS ──────────────────────────────────────────────────────
-  { id: 'beb-agua',          category: 'bebidas', name: 'Água',                         description: '', price: 6  },
-  { id: 'beb-refri',         category: 'bebidas', name: 'Refrigerante',                 description: '', price: 8  },
-  { id: 'beb-heineken',      category: 'bebidas', name: 'Heineken',                     description: '', price: 15 },
-  { id: 'beb-corona',        category: 'bebidas', name: 'Corona',                       description: '', price: 15 },
-  { id: 'beb-original',      category: 'bebidas', name: 'Original',                     description: '', price: 12 },
-  { id: 'beb-milk-nut',      category: 'bebidas', name: 'Milkshake Nutella',            description: '', price: 31 },
-  { id: 'beb-milk-ovo',      category: 'bebidas', name: 'Milkshake Ovomaltine',         description: '', price: 29 },
-  { id: 'beb-milk-brow',     category: 'bebidas', name: 'Milkshake Brownie',            description: '', price: 28 },
-  { id: 'beb-milk-brow-nut', category: 'bebidas', name: 'Milkshake Brownie c/ Nutella', description: '', price: 33 },
+  { id: 'beb-coca',          category: 'bebidas', name: 'Coca-Cola',        description: '', price: 8  },
+  { id: 'beb-coca-zero',     category: 'bebidas', name: 'Coca-Cola Zero',   description: '', price: 8  },
+  { id: 'beb-gua-zero',      category: 'bebidas', name: 'Guaraná Zero',     description: '', price: 8  },
+  { id: 'beb-agua-sem',      category: 'bebidas', name: 'Água sem gás',     description: '', price: 6  },
+  { id: 'beb-agua-com',      category: 'bebidas', name: 'Água com gás',     description: '', price: 6  },
+  { id: 'beb-heineken',      category: 'bebidas', name: 'Heineken',         description: '', price: 15 },
+  { id: 'beb-corona',        category: 'bebidas', name: 'Corona',           description: '', price: 15 },
+  { id: 'beb-original',      category: 'bebidas', name: 'Original',         description: '', price: 12 },
 
   // ── ADICIONAIS ───────────────────────────────────────────────────
   { id: 'add-mayo-lim',    category: 'adicionais', name: 'Mayo 2 Limões',    description: '', price: 6  },
@@ -250,8 +253,8 @@ export const COMBO_PRICE = 16;
 
 export const COMBO_DRINKS = [
   'Coca-Cola',
-  'Guaraná Antarctica',
-  'Sprite',
-  'Fanta Laranja',
-  'Água',
+  'Coca-Cola Zero',
+  'Guaraná Zero',
+  'Água sem gás',
+  'Água com gás',
 ];
