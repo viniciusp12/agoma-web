@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { X, Plus, Minus, ChevronLeft } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
-import { AVAILABLE_ADDITIONALS, COMBO_PRICE, COMBO_DRINKS } from '../../data/menu';
+import { COMBO_PRICE, COMBO_DRINKS } from '../../data/menu';
+import { useMenuItems } from '../../hooks/useMenuItems';
 import type { MeatPoint, CartItemAdditional } from '../../types';
 
 const MEAT_POINTS: { value: MeatPoint; label: string; emoji: string }[] = [
@@ -16,7 +17,12 @@ function formatCurrency(value: number) {
 
 export default function CustomizeModal() {
   const { state, addToCart, setStep, closeModals } = useCart();
+  const { items: menuItems } = useMenuItems();
   const item = state.pendingItem;
+
+  const AVAILABLE_ADDITIONALS: CartItemAdditional[] = menuItems
+    .filter(i => i.category === 'adicionais')
+    .map(i => ({ id: i.id, name: i.name, price: i.price }));
 
   const [qty, setQty]             = useState(1);
   const [meatPoint, setMeat]      = useState<MeatPoint>('ao_ponto');

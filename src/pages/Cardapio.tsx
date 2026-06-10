@@ -1,33 +1,32 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { MENU_ITEMS, CATEGORIES } from '../data/menu';
+import { CATEGORIES } from '../data/menu';
+import { useMenuItems } from '../hooks/useMenuItems';
 import MenuItemCard from '../components/MenuItemCard';
 import type { MenuCategory } from '../types';
 
 export default function Cardapio() {
+  const { items: allItems, loading } = useMenuItems();
   const [activeCategory, setActiveCategory] = useState<MenuCategory>('ciabattas');
   const navRef = useRef<HTMLDivElement>(null);
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
 
   /* ── Highlight active category on scroll ── */
   useEffect(() => {
+    if (loading) return;
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setActiveCategory(entry.target.id as MenuCategory);
-          }
+          if (entry.isIntersecting) setActiveCategory(entry.target.id as MenuCategory);
         });
       },
       { rootMargin: '-25% 0px -65% 0px', threshold: 0 }
     );
-
     CATEGORIES.forEach(({ id }) => {
       const el = document.getElementById(id);
       if (el) observer.observe(el);
     });
-
     return () => observer.disconnect();
-  }, []);
+  }, [loading]);
 
   /* ── Scroll nav to keep active button visible ── */
   useEffect(() => {
@@ -46,24 +45,19 @@ export default function Cardapio() {
     const nav    = document.querySelector<HTMLElement>('.category-nav-sticky');
     const el     = document.getElementById(id);
     if (!el) return;
-
     const offset = (header?.offsetHeight ?? 64) + (nav?.offsetHeight ?? 52) + 8;
-    const top = el.getBoundingClientRect().top + window.scrollY - offset;
-    window.scrollTo({ top, behavior: 'smooth' });
+    window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - offset, behavior: 'smooth' });
   }, []);
 
-  const itemsByCategory = (cat: MenuCategory) =>
-    MENU_ITEMS.filter((item) => item.category === cat);
+  const itemsByCategory = (cat: MenuCategory) => allItems.filter((i) => i.category === cat);
 
   return (
     <div>
-      {/* ── HERO CARDÁPIO ────────────────────────────────────────── */}
+      {/* ── HERO ── */}
       <div className="bg-[#1A2E17] py-10 px-5 text-center">
         <p className="text-[#C4A044] text-xs font-bold uppercase tracking-widest mb-2">AGOMA.</p>
-        <h1
-          className="text-4xl md:text-5xl font-black text-[#F5F0E6] mb-2"
-          style={{ fontFamily: "'Playfair Display', serif" }}
-        >
+        <h1 className="text-4xl md:text-5xl font-black text-[#F5F0E6] mb-2"
+          style={{ fontFamily: "'Playfair Display', serif" }}>
           Cardápio
         </h1>
         <p className="text-[#F5F0E6]/50 text-sm">
@@ -71,28 +65,20 @@ export default function Cardapio() {
         </p>
       </div>
 
-      {/* ── PROMO ────────────────────────────────────────────────── */}
+      {/* ── PROMO ── */}
       <div className="bg-[#C4A044] text-[#1A2E17] py-2.5 px-5 text-center text-sm font-medium">
         🔥 <strong>TURBINE SEU LANCHE</strong> — Adicione Refri + Fritas por apenas <strong>+R$ 16</strong>
       </div>
 
-      {/* ── CATEGORY NAV ─────────────────────────────────────────── */}
-      <nav
-        ref={navRef}
-        className="category-nav-sticky sticky top-16 z-40 bg-[#1A2E17] border-b border-white/10 overflow-x-auto hide-scrollbar"
-      >
+      {/* ── CATEGORY NAV ── */}
+      <nav ref={navRef}
+        className="category-nav-sticky sticky top-16 z-40 bg-[#1A2E17] border-b border-white/10 overflow-x-auto hide-scrollbar">
         <div className="flex px-4 min-w-max">
           {CATEGORIES.map(({ id, label, emoji }) => (
-            <button
-              key={id}
-              data-cat={id}
-              onClick={() => scrollToSection(id)}
+            <button key={id} data-cat={id} onClick={() => scrollToSection(id)}
               className={`px-4 py-3.5 text-xs font-bold uppercase tracking-widest whitespace-nowrap transition-all relative ${
-                activeCategory === id
-                  ? 'text-[#C4A044]'
-                  : 'text-[#F5F0E6]/50 hover:text-[#F5F0E6]'
-              }`}
-            >
+                activeCategory === id ? 'text-[#C4A044]' : 'text-[#F5F0E6]/50 hover:text-[#F5F0E6]'
+              }`}>
               <span className="mr-1">{emoji}</span> {label}
               {activeCategory === id && (
                 <span className="absolute bottom-0 left-3 right-3 h-0.5 bg-[#C4A044] rounded-full" />
@@ -102,46 +88,52 @@ export default function Cardapio() {
         </div>
       </nav>
 
-      {/* ── MENU SECTIONS ────────────────────────────────────────── */}
+      {/* ── MENU ── */}
       <main className="max-w-6xl mx-auto px-4 py-6 pb-16">
-        {CATEGORIES.map(({ id, label, emoji }) => {
-          const items = itemsByCategory(id);
-          const isList = id === 'bebidas' || id === 'adicionais';
-
-          return (
-            <section
-              key={id}
-              id={id}
-              ref={(el) => { sectionRefs.current[id] = el; }}
-              className="pt-12 first:pt-6"
-            >
-              {/* Section heading */}
-              <div className="flex items-center gap-3 mb-6 pb-3 border-b-2 border-[#E2DAC8] relative">
-                <span className="text-2xl">{emoji}</span>
-                <h2
-                  className="text-2xl md:text-3xl font-bold text-[#1A2E17]"
-                  style={{ fontFamily: "'Playfair Display', serif" }}
-                >
-                  {label}
-                </h2>
-                <span className="absolute bottom-[-2px] left-0 w-12 h-0.5 bg-[#C4A044]" />
+        {loading ? (
+          /* Skeleton enquanto carrega */
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-5 pt-6">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="bg-white rounded-2xl border border-[#E2DAC8] overflow-hidden animate-pulse">
+                <div className="w-full aspect-[4/3] bg-gray-100" />
+                <div className="p-4 flex flex-col gap-2">
+                  <div className="h-4 bg-gray-100 rounded w-3/4" />
+                  <div className="h-3 bg-gray-100 rounded w-full" />
+                  <div className="h-3 bg-gray-100 rounded w-2/3" />
+                  <div className="h-9 bg-gray-100 rounded-xl mt-2" />
+                </div>
               </div>
+            ))}
+          </div>
+        ) : (
+          CATEGORIES.map(({ id, label, emoji }) => {
+            const items = itemsByCategory(id);
+            if (items.length === 0) return null;
+            const isList = id === 'bebidas' || id === 'adicionais';
 
-              {/* Cards */}
-              <div
-                className={
-                  isList
-                    ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3'
-                    : 'grid grid-cols-2 md:grid-cols-3 gap-5'
-                }
-              >
-                {items.map((item) => (
-                  <MenuItemCard key={item.id} item={item} />
-                ))}
-              </div>
-            </section>
-          );
-        })}
+            return (
+              <section key={id} id={id}
+                ref={(el) => { sectionRefs.current[id] = el; }}
+                className="pt-12 first:pt-6">
+                <div className="flex items-center gap-3 mb-6 pb-3 border-b-2 border-[#E2DAC8] relative">
+                  <span className="text-2xl">{emoji}</span>
+                  <h2 className="text-2xl md:text-3xl font-bold text-[#1A2E17]"
+                    style={{ fontFamily: "'Playfair Display', serif" }}>
+                    {label}
+                  </h2>
+                  <span className="absolute bottom-[-2px] left-0 w-12 h-0.5 bg-[#C4A044]" />
+                </div>
+                <div className={isList
+                  ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3'
+                  : 'grid grid-cols-2 md:grid-cols-3 gap-5'}>
+                  {items.map((item) => (
+                    <MenuItemCard key={item.id} item={item} />
+                  ))}
+                </div>
+              </section>
+            );
+          })
+        )}
       </main>
     </div>
   );
