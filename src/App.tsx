@@ -7,12 +7,14 @@ import CartDrawer from './components/CartDrawer';
 import CEPModal from './components/modals/CEPModal';
 import AddressModal from './components/modals/AddressModal';
 import CustomizeModal from './components/modals/CustomizeModal';
+import ScrollToTop from './components/ScrollToTop';
 import Home from './pages/Home';
 import Cardapio from './pages/Cardapio';
 
 export default function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <CartProvider>
         <div className="flex flex-col min-h-screen">
           <Header />

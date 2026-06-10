@@ -55,15 +55,15 @@ export default function MenuItemCard({ item, compact = false }: Props) {
       </div>
 
       {/* Body */}
-      <div className="p-3 flex flex-col gap-1.5 flex-1">
+      <div className="p-4 flex flex-col gap-2 flex-1">
         <div className="flex items-start justify-between gap-1">
           <h3
-            className="font-bold text-[#1A1A1A] text-sm leading-snug"
+            className="font-bold text-[#1A1A1A] text-base leading-snug"
             style={{ fontFamily: "'Playfair Display', serif" }}
           >
             {item.name}
             {item.badge && (
-              <span className="ml-1.5 inline-block text-[0.58rem] bg-[#1A2E17] text-[#C4A044] px-1.5 py-0.5 rounded-full font-semibold tracking-wide align-middle">
+              <span className="ml-1.5 inline-block text-[0.6rem] bg-[#1A2E17] text-[#C4A044] px-1.5 py-0.5 rounded-full font-semibold tracking-wide align-middle">
                 {item.badge}
               </span>
             )}
@@ -71,18 +71,18 @@ export default function MenuItemCard({ item, compact = false }: Props) {
         </div>
 
         {item.description && (
-          <p className="text-[0.7rem] text-gray-500 leading-relaxed line-clamp-2">{item.description}</p>
+          <p className="text-xs text-gray-500 leading-relaxed line-clamp-2">{item.description}</p>
         )}
 
         {/* Price + Add button */}
         <div className="flex items-center justify-between mt-auto pt-2">
-          <span className="text-[#1A2E17] font-bold text-sm">R$ {item.price}</span>
+          <span className="text-[#1A2E17] font-bold text-base">R$ {item.price}</span>
           <button
             onClick={() => startOrder(item)}
-            className="flex items-center gap-1.5 bg-[#1A2E17] hover:bg-[#2B4A26] text-white text-xs font-bold px-3 py-1.5 rounded-xl transition-all hover:scale-105 active:scale-95"
+            className="flex items-center gap-1.5 bg-[#1A2E17] hover:bg-[#2B4A26] text-white text-sm font-bold px-3.5 py-2 rounded-xl transition-all hover:scale-105 active:scale-95"
             aria-label={`Adicionar ${item.name}`}
           >
-            <Plus size={13} /> Adicionar
+            <Plus size={14} /> Adicionar
           </button>
         </div>
       </div>

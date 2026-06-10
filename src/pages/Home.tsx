@@ -41,7 +41,7 @@ export default function Home() {
           <img
             src="/assets/logo/logo-light.png"
             alt="AGOMA. Street Food"
-            className="h-44 w-auto mx-auto mb-4 brightness-0 invert opacity-95 drop-shadow-2xl"
+            className="h-64 md:h-72 w-auto mx-auto mb-6 brightness-0 invert opacity-95 drop-shadow-2xl"
           />
         </div>
 
@@ -71,12 +71,6 @@ export default function Home() {
           </a>
         </div>
 
-        {/* Scroll indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
-          <div className="w-6 h-10 rounded-full border-2 border-white/30 flex items-start justify-center pt-2">
-            <div className="w-1 h-2 bg-white/50 rounded-full" />
-          </div>
-        </div>
       </section>
 
       {/* ── INFO BAR ─────────────────────────────────────────────── */}

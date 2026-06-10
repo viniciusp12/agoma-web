@@ -16,7 +16,7 @@ export default function Header() {
       <div className="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between gap-4">
 
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-3 shrink-0">
+        <Link to="/" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="flex items-center gap-3 shrink-0">
           <img
             src="/assets/logo/logo-light.png"
             alt="AGOMA."
