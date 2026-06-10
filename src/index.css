@@ -19,6 +19,22 @@
   .hide-scrollbar::-webkit-scrollbar { display: none; }
 }
 
+@layer components {
+  .input-field {
+    width: 100%;
+    padding: 0.625rem 0.875rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 0.75rem;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.15s;
+    background: white;
+  }
+  .input-field:focus {
+    border-color: #1A2E17;
+  }
+}
+
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(24px); }
   to   { opacity: 1; transform: translateY(0); }

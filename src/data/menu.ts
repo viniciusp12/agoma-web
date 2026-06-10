@@ -1,4 +1,4 @@
-import type { MenuItem, CategoryInfo } from '../types';
+import type { MenuItem, CategoryInfo, CartItemAdditional } from '../types';
 
 export const CATEGORIES: CategoryInfo[] = [
   { id: 'ciabattas',  label: 'Ciabattas',   emoji: '🥖' },
@@ -21,6 +21,7 @@ export const MENU_ITEMS: MenuItem[] = [
     price: 30,
     image: '/assets/images/IMG_6373.jpg',
     badge: '🌿 veg',
+    canBeCombo: true,
   },
   {
     id: 'ciab-gallus',
@@ -29,6 +30,7 @@ export const MENU_ITEMS: MenuItem[] = [
     description: 'Pão, o Nosso Frango, requeijão cremoso, rúcula, tomate, picles de pepino e mayo verde.',
     price: 32,
     image: '/assets/images/IMG_6351.jpg',
+    canBeCombo: true,
   },
   {
     id: 'ciab-cheddar-porkus',
@@ -37,6 +39,7 @@ export const MENU_ITEMS: MenuItem[] = [
     description: 'Pão, a Nossa Costelinha, cheddar D\'Agoma, barbecue, rúcula e tomate.',
     price: 39,
     image: '/assets/images/IMG_6419.png',
+    canBeCombo: true,
   },
   {
     id: 'ciab-gallus-fritus',
@@ -45,6 +48,7 @@ export const MENU_ITEMS: MenuItem[] = [
     description: 'Pão, nosso Frango Frito crocante por fora e suculento por dentro, mayo limão, queijo meleca e picles de pepino.',
     price: 37,
     image: '/assets/images/IMG_6208.jpg',
+    canBeCombo: true,
   },
 
   // ── BURGUERS ─────────────────────────────────────────────────────
@@ -55,6 +59,8 @@ export const MENU_ITEMS: MenuItem[] = [
     description: 'Pão brioche, burger smash, queijo prato cremoso e picles de pepino.',
     price: 26,
     image: '/assets/images/IMG_6469.jpg',
+    hasMeatPoint: true,
+    canBeCombo: true,
   },
   {
     id: 'burg-cheese',
@@ -63,6 +69,8 @@ export const MENU_ITEMS: MenuItem[] = [
     description: 'O óbvio. Pão brioche, Blend D\'Agoma e queijo prato.',
     price: 29,
     image: '/assets/images/IMG_6472.jpg',
+    hasMeatPoint: true,
+    canBeCombo: true,
   },
   {
     id: 'burg-cheese-salada',
@@ -71,6 +79,8 @@ export const MENU_ITEMS: MenuItem[] = [
     description: 'Pão brioche, Blend D\'Agoma, queijo prato, mayo verde, alface e tomate.',
     price: 33,
     image: '/assets/images/IMG_6478.jpg',
+    hasMeatPoint: true,
+    canBeCombo: true,
   },
   {
     id: 'burg-cheddar-agoma',
@@ -80,6 +90,8 @@ export const MENU_ITEMS: MenuItem[] = [
     price: 35,
     image: '/assets/images/IMG_6704.jpg',
     badge: '⭐ top',
+    hasMeatPoint: true,
+    canBeCombo: true,
   },
   {
     id: 'burg-cheddar-porkus',
@@ -88,6 +100,8 @@ export const MENU_ITEMS: MenuItem[] = [
     description: 'Pão brioche, Blend D\'Agoma, cheddar D\'Agoma e a Nossa Costelinha.',
     price: 39,
     image: '/assets/images/IMG_5931.jpg',
+    hasMeatPoint: true,
+    canBeCombo: true,
   },
   {
     id: 'burg-trufa-deli',
@@ -95,6 +109,8 @@ export const MENU_ITEMS: MenuItem[] = [
     name: 'TrufaDeli',
     description: 'Cheeseburger clássico com mayo trufada.',
     price: 37,
+    hasMeatPoint: true,
+    canBeCombo: true,
   },
 
   // ── WRAPS ────────────────────────────────────────────────────────
@@ -105,6 +121,7 @@ export const MENU_ITEMS: MenuItem[] = [
     description: 'Pão folha, alface, tomate, mayo verde, picles de pepino, requeijão cremoso e o Nosso Frango.',
     price: 29,
     image: '/assets/images/IMG_6422.jpg',
+    canBeCombo: true,
   },
   {
     id: 'wrap-porkus',
@@ -112,6 +129,7 @@ export const MENU_ITEMS: MenuItem[] = [
     name: 'Porkus',
     description: 'Pão folha, alface, tomate, barbecue, requeijão cremoso e a Nossa Costelinha de porco.',
     price: 35,
+    canBeCombo: true,
   },
   {
     id: 'wrap-tirus-fritus',
@@ -119,6 +137,7 @@ export const MENU_ITEMS: MenuItem[] = [
     name: 'Tirus Fritus',
     description: 'Pão folha, alface, tomate, mayo 2 limões, queijo meleca e nosso delicioso frango frito.',
     price: 34,
+    canBeCombo: true,
   },
 
   // ── FRITAS ───────────────────────────────────────────────────────
@@ -165,6 +184,8 @@ export const MENU_ITEMS: MenuItem[] = [
     description: 'Croissant, dois burger smash, queijo prato cremoso, mayo dos limões, bacon e mel.',
     price: 41,
     badge: '🔥 novo',
+    hasMeatPoint: true,
+    canBeCombo: true,
   },
   {
     id: 'croa-porkus',
@@ -172,6 +193,7 @@ export const MENU_ITEMS: MenuItem[] = [
     name: 'CroaPorkus',
     description: 'Croissant, a Nossa Costelinha e requeijão cremoso.',
     price: 26,
+    canBeCombo: true,
   },
   {
     id: 'croa-gallus',
@@ -179,27 +201,28 @@ export const MENU_ITEMS: MenuItem[] = [
     name: 'CroaGallus',
     description: 'Croissant, o Nosso Frango e requeijão cremoso.',
     price: 21,
+    canBeCombo: true,
   },
 
   // ── SOBREMESAS ───────────────────────────────────────────────────
-  { id: 'sob-brig-nutella',   category: 'sobremesas', name: 'Brigadeiro Nutella',         description: 'Com brownie.',            price: 7  },
-  { id: 'sob-brig-ninho',     category: 'sobremesas', name: 'Brigadeiro Ninho',            description: 'Com frutas vermelhas.',   price: 8  },
-  { id: 'sob-brownie',        category: 'sobremesas', name: 'Brownie',                     description: 'O clássico.',             price: 15 },
-  { id: 'sob-brownie-cob',    category: 'sobremesas', name: 'Brownie c/ Cobertura',        description: 'Brownie com cobertura especial.', price: 26 },
-  { id: 'sob-croa-nutella',   category: 'sobremesas', name: 'Croissant Nutella',           description: 'Croissant recheado com nutella.', price: 23 },
-  { id: 'sob-croa-nut-sorv',  category: 'sobremesas', name: 'Croissant Nutella c/ Sorvete', description: 'Croissant nutella com sorvete.', price: 29 },
-  { id: 'sob-croa-ninho',     category: 'sobremesas', name: 'Croissant Ninho',             description: 'Com frutas vermelhas.',   price: 24 },
+  { id: 'sob-brig-nutella',   category: 'sobremesas', name: 'Brigadeiro Nutella',           description: 'Com brownie.',                    price: 7  },
+  { id: 'sob-brig-ninho',     category: 'sobremesas', name: 'Brigadeiro Ninho',              description: 'Com frutas vermelhas.',           price: 8  },
+  { id: 'sob-brownie',        category: 'sobremesas', name: 'Brownie',                       description: 'O clássico.',                     price: 15 },
+  { id: 'sob-brownie-cob',    category: 'sobremesas', name: 'Brownie c/ Cobertura',          description: 'Brownie com cobertura especial.',  price: 26 },
+  { id: 'sob-croa-nutella',   category: 'sobremesas', name: 'Croissant Nutella',             description: 'Croissant recheado com nutella.',  price: 23 },
+  { id: 'sob-croa-nut-sorv',  category: 'sobremesas', name: 'Croissant Nutella c/ Sorvete', description: 'Croissant nutella com sorvete.',   price: 29 },
+  { id: 'sob-croa-ninho',     category: 'sobremesas', name: 'Croissant Ninho',               description: 'Com frutas vermelhas.',           price: 24 },
 
   // ── BEBIDAS ──────────────────────────────────────────────────────
-  { id: 'beb-agua',         category: 'bebidas', name: 'Água',                       description: '', price: 6  },
-  { id: 'beb-refri',        category: 'bebidas', name: 'Refrigerante',               description: '', price: 8  },
-  { id: 'beb-heineken',     category: 'bebidas', name: 'Heineken',                   description: '', price: 15 },
-  { id: 'beb-corona',       category: 'bebidas', name: 'Corona',                     description: '', price: 15 },
-  { id: 'beb-original',     category: 'bebidas', name: 'Original',                   description: '', price: 12 },
-  { id: 'beb-milk-nut',     category: 'bebidas', name: 'Milkshake Nutella',          description: '', price: 31 },
-  { id: 'beb-milk-ovo',     category: 'bebidas', name: 'Milkshake Ovomaltine',       description: '', price: 29 },
-  { id: 'beb-milk-brow',    category: 'bebidas', name: 'Milkshake Brownie',          description: '', price: 28 },
-  { id: 'beb-milk-brow-nut',category: 'bebidas', name: 'Milkshake Brownie c/ Nutella', description: '', price: 33 },
+  { id: 'beb-agua',          category: 'bebidas', name: 'Água',                         description: '', price: 6  },
+  { id: 'beb-refri',         category: 'bebidas', name: 'Refrigerante',                 description: '', price: 8  },
+  { id: 'beb-heineken',      category: 'bebidas', name: 'Heineken',                     description: '', price: 15 },
+  { id: 'beb-corona',        category: 'bebidas', name: 'Corona',                       description: '', price: 15 },
+  { id: 'beb-original',      category: 'bebidas', name: 'Original',                     description: '', price: 12 },
+  { id: 'beb-milk-nut',      category: 'bebidas', name: 'Milkshake Nutella',            description: '', price: 31 },
+  { id: 'beb-milk-ovo',      category: 'bebidas', name: 'Milkshake Ovomaltine',         description: '', price: 29 },
+  { id: 'beb-milk-brow',     category: 'bebidas', name: 'Milkshake Brownie',            description: '', price: 28 },
+  { id: 'beb-milk-brow-nut', category: 'bebidas', name: 'Milkshake Brownie c/ Nutella', description: '', price: 33 },
 
   // ── ADICIONAIS ───────────────────────────────────────────────────
   { id: 'add-mayo-lim',    category: 'adicionais', name: 'Mayo 2 Limões',    description: '', price: 6  },
@@ -214,6 +237,13 @@ export const MENU_ITEMS: MenuItem[] = [
   { id: 'add-bacon-mel',   category: 'adicionais', name: 'Bacon MELado',     description: '', price: 7  },
 ];
 
+// Adicionais disponíveis para customização de qualquer item
+export const AVAILABLE_ADDITIONALS: CartItemAdditional[] = MENU_ITEMS
+  .filter((i) => i.category === 'adicionais')
+  .map((i) => ({ id: i.id, name: i.name, price: i.price }));
+
 export const FEATURED_ITEMS = MENU_ITEMS.filter((item) =>
   ['burg-cheddar-agoma', 'frit-trufa-crispy', 'ciab-gallus-fritus', 'croa-burguer'].includes(item.id)
 );
+
+export const COMBO_PRICE = 16;
