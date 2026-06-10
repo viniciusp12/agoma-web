@@ -1,5 +1,6 @@
 import { X, Trash2, Plus, Minus, ShoppingBag, MessageCircle } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { supabase } from '../services/supabase';
 
 function formatCurrency(value: number) {
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -15,6 +16,36 @@ export default function CartDrawer() {
   const { isCartOpen, items, address } = state;
 
   if (!isCartOpen) return null;
+
+  async function saveOrder() {
+    try {
+      const { data: order } = await supabase
+        .from('orders')
+        .insert([{ total: totalPrice, address, status: 'pending' }])
+        .select()
+        .single();
+
+      if (order) {
+        const orderItems = items.map(ci => {
+          const addPrice = ci.additionals.reduce((s, a) => s + a.price, 0);
+          const combo    = ci.isCombo ? 16 : 0;
+          const unit     = ci.item.price + addPrice + combo;
+          return {
+            order_id:   order.id,
+            item_name:  ci.item.name,
+            item_price: ci.item.price,
+            quantity:   ci.quantity,
+            meat_point: ci.meatPoint ?? null,
+            is_combo:   ci.isCombo,
+            combo_drink:ci.comboDrink ?? null,
+            additionals:ci.additionals,
+            subtotal:   unit * ci.quantity,
+          };
+        });
+        await supabase.from('order_items').insert(orderItems);
+      }
+    } catch { /* silencioso — não bloqueia o checkout */ }
+  }
 
   function buildWhatsAppMessage(): string {
     const lines: string[] = ['🛒 *Novo Pedido AGOMA.*\n'];
@@ -173,6 +204,7 @@ export default function CartDrawer() {
               href={`https://wa.me/5511988381411?text=${buildWhatsAppMessage()}`}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => saveOrder()}
               className="w-full bg-[#25D366] hover:bg-[#1ebe5a] text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all hover:-translate-y-0.5"
             >
               <MessageCircle size={18} />
