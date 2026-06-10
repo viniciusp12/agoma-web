@@ -247,3 +247,11 @@ export const FEATURED_ITEMS = MENU_ITEMS.filter((item) =>
 );
 
 export const COMBO_PRICE = 16;
+
+export const COMBO_DRINKS = [
+  'Coca-Cola',
+  'Guaraná Antarctica',
+  'Sprite',
+  'Fanta Laranja',
+  'Água',
+];

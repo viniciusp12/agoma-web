@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, Plus, Minus, ChevronLeft } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
-import { AVAILABLE_ADDITIONALS, COMBO_PRICE } from '../../data/menu';
+import { AVAILABLE_ADDITIONALS, COMBO_PRICE, COMBO_DRINKS } from '../../data/menu';
 import type { MeatPoint, CartItemAdditional } from '../../types';
 
 const MEAT_POINTS: { value: MeatPoint; label: string; emoji: string }[] = [
@@ -18,14 +18,15 @@ export default function CustomizeModal() {
   const { state, addToCart, setStep, closeModals } = useCart();
   const item = state.pendingItem;
 
-  const [qty, setQty]           = useState(1);
-  const [meatPoint, setMeat]    = useState<MeatPoint>('ao_ponto');
-  const [additionals, setAdd]   = useState<CartItemAdditional[]>([]);
-  const [isCombo, setCombo]     = useState(false);
+  const [qty, setQty]             = useState(1);
+  const [meatPoint, setMeat]      = useState<MeatPoint>('ao_ponto');
+  const [additionals, setAdd]     = useState<CartItemAdditional[]>([]);
+  const [isCombo, setCombo]       = useState(false);
+  const [comboDrink, setComboDrink] = useState('');
 
   useEffect(() => {
     if (state.step === 'customize') {
-      setQty(1); setAdd([]); setCombo(false); setMeat('ao_ponto');
+      setQty(1); setAdd([]); setCombo(false); setMeat('ao_ponto'); setComboDrink('');
       document.body.style.overflow = 'hidden';
     }
     return () => { document.body.style.overflow = ''; };
@@ -58,10 +59,13 @@ export default function CustomizeModal() {
       meatPoint: safeItem.hasMeatPoint ? meatPoint : undefined,
       additionals,
       isCombo,
+      comboDrink: isCombo ? comboDrink : undefined,
     });
   }
 
-  const showAdditionals = safeItem.category !== 'bebidas' && item.category !== 'adicionais';
+  const showAdditionals = safeItem.category !== 'bebidas'
+    && safeItem.category !== 'adicionais'
+    && safeItem.category !== 'sobremesas';
   const showCombo       = !!safeItem.canBeCombo;
   const showMeat        = !!safeItem.hasMeatPoint;
 
@@ -156,7 +160,7 @@ export default function CustomizeModal() {
                 isCombo ? 'border-[#C4A044] bg-[#C4A044]/10' : 'border-gray-200 hover:border-gray-300'
               }`}>
                 <input type="checkbox" className="sr-only"
-                  checked={isCombo} onChange={(e) => setCombo(e.target.checked)} />
+                  checked={isCombo} onChange={(e) => { setCombo(e.target.checked); setComboDrink(''); }} />
                 <span className="text-2xl">🔥</span>
                 <div className="flex-1">
                   <p className={`font-bold text-sm ${isCombo ? 'text-[#1A2E17]' : 'text-gray-700'}`}>
@@ -177,6 +181,38 @@ export default function CustomizeModal() {
                   )}
                 </div>
               </label>
+
+              {/* Escolha da bebida do combo */}
+              {isCombo && (
+                <div className="mt-3">
+                  <SectionTitle title="Qual bebida?" required />
+                  <div className="flex flex-col gap-2">
+                    {COMBO_DRINKS.map((drink) => (
+                      <label key={drink}
+                        className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                          comboDrink === drink
+                            ? 'border-[#1A2E17] bg-[#1A2E17]/5'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <input type="radio" name="comboDrink" className="sr-only"
+                          checked={comboDrink === drink} onChange={() => setComboDrink(drink)} />
+                        <span className="text-xl">🥤</span>
+                        <span className={`font-semibold text-sm flex-1 ${comboDrink === drink ? 'text-[#1A2E17]' : 'text-gray-600'}`}>
+                          {drink}
+                        </span>
+                        {comboDrink === drink && (
+                          <span className="w-5 h-5 bg-[#1A2E17] rounded-full flex items-center justify-center">
+                            <svg viewBox="0 0 10 8" className="w-3 h-3 fill-white">
+                              <path d="M1 4l3 3 5-6" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          </span>
+                        )}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -240,7 +276,8 @@ export default function CustomizeModal() {
           {/* Add button */}
           <button
             onClick={handleAdd}
-            className="flex-1 bg-[#1A2E17] hover:bg-[#2B4A26] text-white font-bold py-3 rounded-xl transition-all flex items-center justify-between px-4"
+            disabled={isCombo && !comboDrink}
+            className="flex-1 bg-[#1A2E17] hover:bg-[#2B4A26] disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3 rounded-xl transition-all flex items-center justify-between px-4"
           >
             <span>Adicionar</span>
             <span>{formatCurrency(total)}</span>

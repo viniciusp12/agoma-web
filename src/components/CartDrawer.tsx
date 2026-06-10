@@ -11,7 +11,7 @@ function formatMeat(point?: string) {
 }
 
 export default function CartDrawer() {
-  const { state, closeCart, removeFromCart, updateQty, clearCart, totalPrice } = useCart();
+  const { state, closeCart, removeFromCart, updateQty, clearCart, totalPrice, changeAddress } = useCart();
   const { isCartOpen, items, address } = state;
 
   if (!isCartOpen) return null;
@@ -26,7 +26,7 @@ export default function CartDrawer() {
 
       lines.push(`*${i + 1}. ${ci.item.name}* x${ci.quantity} — ${formatCurrency(unit * ci.quantity)}`);
       if (ci.meatPoint)         lines.push(`   • Ponto: ${formatMeat(ci.meatPoint)}`);
-      if (ci.isCombo)           lines.push(`   • 🔥 Combo (Refri + Fritas)`);
+      if (ci.isCombo)           lines.push(`   • 🔥 Combo (Refri + Fritas)${ci.comboDrink ? ` — ${ci.comboDrink}` : ''}`);
       ci.additionals.forEach((a) => lines.push(`   • + ${a.name}`));
     });
 
@@ -82,8 +82,16 @@ export default function CartDrawer() {
 
         {/* Address badge */}
         {address && (
-          <div className="mx-5 mt-3 px-3 py-2 bg-[#1A2E17]/5 border border-[#1A2E17]/20 rounded-xl text-xs text-[#1A2E17] font-medium truncate">
-            📍 {address.street}, {address.number} — {address.neighborhood}
+          <div className="mx-5 mt-3 px-3 py-2 bg-[#1A2E17]/5 border border-[#1A2E17]/20 rounded-xl flex items-center gap-2">
+            <span className="text-xs text-[#1A2E17] font-medium truncate flex-1">
+              📍 {address.street}, {address.number} — {address.neighborhood}
+            </span>
+            <button
+              onClick={changeAddress}
+              className="shrink-0 text-[0.65rem] font-bold text-[#C4A044] hover:text-[#D4B558] underline underline-offset-2 transition-colors"
+            >
+              Alterar
+            </button>
           </div>
         )}
 
@@ -119,7 +127,7 @@ export default function CartDrawer() {
                     {/* Details */}
                     <div className="text-xs text-gray-500 mt-0.5 leading-relaxed">
                       {ci.meatPoint && <p>• {formatMeat(ci.meatPoint)}</p>}
-                      {ci.isCombo   && <p>• 🔥 Combo (Refri + Fritas)</p>}
+                      {ci.isCombo   && <p>• 🔥 Combo (Refri + Fritas){ci.comboDrink ? ` — ${ci.comboDrink}` : ''}</p>}
                       {ci.additionals.map((a) => <p key={a.id}>• + {a.name}</p>)}
                     </div>
 

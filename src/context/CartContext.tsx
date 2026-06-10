@@ -44,6 +44,7 @@ type Action =
   | { type: 'START_ORDER'; item: MenuItem }
   | { type: 'SET_STEP'; step: OrderStep }
   | { type: 'SAVE_ADDRESS'; address: Address }
+  | { type: 'CHANGE_ADDRESS' }
   | { type: 'ADD_TO_CART'; cartItem: CartItem }
   | { type: 'REMOVE_FROM_CART'; cartId: string }
   | { type: 'UPDATE_QTY'; cartId: string; qty: number }
@@ -66,8 +67,15 @@ function reducer(state: CartState, action: Action): CartState {
 
     case 'SAVE_ADDRESS': {
       localStorage.setItem(STORAGE_ADDRESS_KEY, JSON.stringify(action.address));
-      return { ...state, address: action.address, step: 'customize' };
+      // Se há item pendente, vai para customização; caso contrário, volta ao carrinho
+      if (state.pendingItem) {
+        return { ...state, address: action.address, step: 'customize' };
+      }
+      return { ...state, address: action.address, step: 'idle', isCartOpen: true };
     }
+
+    case 'CHANGE_ADDRESS':
+      return { ...state, step: 'cep', pendingItem: null, isCartOpen: false };
 
     case 'ADD_TO_CART': {
       const items = [...state.items, action.cartItem];
@@ -108,18 +116,19 @@ function reducer(state: CartState, action: Action): CartState {
 
 interface CartContextValue {
   state: CartState;
-  startOrder:   (item: MenuItem) => void;
-  setStep:      (step: OrderStep) => void;
-  saveAddress:  (address: Address) => void;
-  addToCart:    (cartItem: CartItem) => void;
+  startOrder:     (item: MenuItem) => void;
+  setStep:        (step: OrderStep) => void;
+  saveAddress:    (address: Address) => void;
+  changeAddress:  () => void;
+  addToCart:      (cartItem: CartItem) => void;
   removeFromCart: (cartId: string) => void;
-  updateQty:    (cartId: string, qty: number) => void;
-  clearCart:    () => void;
-  openCart:     () => void;
-  closeCart:    () => void;
-  closeModals:  () => void;
-  totalItems:   number;
-  totalPrice:   number;
+  updateQty:      (cartId: string, qty: number) => void;
+  clearCart:      () => void;
+  openCart:       () => void;
+  closeCart:      () => void;
+  closeModals:    () => void;
+  totalItems:     number;
+  totalPrice:     number;
 }
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -127,16 +136,17 @@ const CartContext = createContext<CartContextValue | null>(null);
 export function CartProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
 
-  const startOrder    = useCallback((item: MenuItem) => dispatch({ type: 'START_ORDER', item }), []);
-  const setStep       = useCallback((step: OrderStep) => dispatch({ type: 'SET_STEP', step }), []);
-  const saveAddress   = useCallback((address: Address) => dispatch({ type: 'SAVE_ADDRESS', address }), []);
-  const addToCart     = useCallback((cartItem: CartItem) => dispatch({ type: 'ADD_TO_CART', cartItem }), []);
-  const removeFromCart= useCallback((cartId: string) => dispatch({ type: 'REMOVE_FROM_CART', cartId }), []);
-  const updateQty     = useCallback((cartId: string, qty: number) => dispatch({ type: 'UPDATE_QTY', cartId, qty }), []);
-  const clearCart     = useCallback(() => dispatch({ type: 'CLEAR_CART' }), []);
-  const openCart      = useCallback(() => dispatch({ type: 'OPEN_CART'  }), []);
-  const closeCart     = useCallback(() => dispatch({ type: 'CLOSE_CART' }), []);
-  const closeModals   = useCallback(() => dispatch({ type: 'CLOSE_MODALS' }), []);
+  const startOrder     = useCallback((item: MenuItem) => dispatch({ type: 'START_ORDER', item }), []);
+  const setStep        = useCallback((step: OrderStep) => dispatch({ type: 'SET_STEP', step }), []);
+  const saveAddress    = useCallback((address: Address) => dispatch({ type: 'SAVE_ADDRESS', address }), []);
+  const changeAddress  = useCallback(() => dispatch({ type: 'CHANGE_ADDRESS' }), []);
+  const addToCart      = useCallback((cartItem: CartItem) => dispatch({ type: 'ADD_TO_CART', cartItem }), []);
+  const removeFromCart = useCallback((cartId: string) => dispatch({ type: 'REMOVE_FROM_CART', cartId }), []);
+  const updateQty      = useCallback((cartId: string, qty: number) => dispatch({ type: 'UPDATE_QTY', cartId, qty }), []);
+  const clearCart      = useCallback(() => dispatch({ type: 'CLEAR_CART' }), []);
+  const openCart       = useCallback(() => dispatch({ type: 'OPEN_CART'  }), []);
+  const closeCart      = useCallback(() => dispatch({ type: 'CLOSE_CART' }), []);
+  const closeModals    = useCallback(() => dispatch({ type: 'CLOSE_MODALS' }), []);
 
   const totalItems = state.items.reduce((s, i) => s + i.quantity, 0);
   const totalPrice = state.items.reduce((s, i) => {
@@ -147,7 +157,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   return (
     <CartContext.Provider value={{
-      state, startOrder, setStep, saveAddress,
+      state, startOrder, setStep, saveAddress, changeAddress,
       addToCart, removeFromCart, updateQty,
       clearCart, openCart, closeCart, closeModals,
       totalItems, totalPrice,

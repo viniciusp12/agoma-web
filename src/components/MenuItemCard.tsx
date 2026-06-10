@@ -19,18 +19,21 @@ export default function MenuItemCard({ item, compact = false }: Props) {
     (item.category === 'bebidas' || item.category === 'adicionais');
 
   if (isListItem) {
+    const isAddOn = item.category === 'adicionais';
     return (
       <div className="bg-white rounded-xl border border-[#E2DAC8] px-4 py-3 flex items-center justify-between gap-3 hover:shadow-md transition-all hover:-translate-y-0.5">
         <span className="font-medium text-[#1A1A1A] text-sm">{item.name}</span>
         <div className="flex items-center gap-2 shrink-0">
           <span className="font-bold text-[#1A2E17] text-sm">R$ {item.price}</span>
-          <button
-            onClick={() => startOrder(item)}
-            className="w-7 h-7 bg-[#1A2E17] hover:bg-[#2B4A26] text-white rounded-lg flex items-center justify-center transition-all hover:scale-110"
-            aria-label={`Adicionar ${item.name}`}
-          >
-            <Plus size={14} />
-          </button>
+          {!isAddOn && (
+            <button
+              onClick={() => startOrder(item)}
+              className="w-7 h-7 bg-[#1A2E17] hover:bg-[#2B4A26] text-white rounded-lg flex items-center justify-center transition-all hover:scale-110"
+              aria-label={`Adicionar ${item.name}`}
+            >
+              <Plus size={14} />
+            </button>
+          )}
         </div>
       </div>
     );

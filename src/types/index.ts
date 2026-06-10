@@ -35,6 +35,7 @@ export interface CartItem {
   meatPoint?: MeatPoint;
   additionals: CartItemAdditional[];
   isCombo: boolean;
+  comboDrink?: string;      // bebida escolhida no combo
 }
 
 export interface Address {
