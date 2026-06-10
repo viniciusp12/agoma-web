@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Pencil, Eye, EyeOff, X, Upload, Check } from 'lucide-react';
+import { Plus, Pencil, Eye, EyeOff, X, Upload, Check, Trash2 } from 'lucide-react';
 import { supabase, type DBMenuItem } from '../../services/supabase';
 import AdminLayout from '../../components/admin/AdminLayout';
 
@@ -27,9 +27,10 @@ export default function AdminCardapio() {
   const [filterCat, setFilterCat] = useState('all');
   const [editing, setEditing]     = useState<DBMenuItem | null>(null);
   const [form, setForm]           = useState(EMPTY);
-  const [saving, setSaving]       = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [saved, setSaved]         = useState(false);
+  const [saving, setSaving]         = useState(false);
+  const [uploading, setUploading]   = useState(false);
+  const [saved, setSaved]           = useState(false);
+  const [confirmDelete, setConfirm] = useState<string | null>(null); // id do item aguardando confirmação
 
   useEffect(() => { fetchItems(); }, []);
 
@@ -87,6 +88,12 @@ export default function AdminCardapio() {
   async function toggleActive(item: DBMenuItem) {
     await supabase.from('menu_items').update({ active: !item.active }).eq('id', item.id);
     setItems(prev => prev.map(i => i.id === item.id ? { ...i, active: !i.active } : i));
+  }
+
+  async function handleDelete(id: string) {
+    await supabase.from('menu_items').delete().eq('id', id);
+    setItems(prev => prev.filter(i => i.id !== id));
+    setConfirm(null);
   }
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -190,7 +197,7 @@ export default function AdminCardapio() {
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex gap-1">
+                      <div className="flex gap-1 items-center">
                         <button onClick={() => openEdit(item)}
                           className="p-1.5 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="Editar">
                           <Pencil size={15} />
@@ -200,6 +207,26 @@ export default function AdminCardapio() {
                           title={item.active ? 'Ocultar' : 'Ativar'}>
                           {item.active ? <EyeOff size={15} /> : <Eye size={15} />}
                         </button>
+
+                        {/* Deletar — pede confirmação inline */}
+                        {confirmDelete === item.id ? (
+                          <div className="flex items-center gap-1 bg-red-50 border border-red-200 rounded-lg px-2 py-1">
+                            <span className="text-[0.65rem] text-red-600 font-semibold whitespace-nowrap">Confirmar?</span>
+                            <button onClick={() => handleDelete(item.id)}
+                              className="text-[0.65rem] font-bold bg-red-500 hover:bg-red-600 text-white px-1.5 py-0.5 rounded transition-all">
+                              Sim
+                            </button>
+                            <button onClick={() => setConfirm(null)}
+                              className="text-[0.65rem] font-bold bg-gray-200 hover:bg-gray-300 text-gray-600 px-1.5 py-0.5 rounded transition-all">
+                              Não
+                            </button>
+                          </div>
+                        ) : (
+                          <button onClick={() => setConfirm(item.id)}
+                            className="p-1.5 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all" title="Deletar">
+                            <Trash2 size={15} />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
