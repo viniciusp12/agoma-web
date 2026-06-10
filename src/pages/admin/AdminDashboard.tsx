@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ShoppingBag, TrendingUp, Calendar, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { ShoppingBag, TrendingUp, Calendar, Clock, CheckCircle, XCircle, Trash2 } from 'lucide-react';
 import { supabase, type DBOrder, type DBOrderItem } from '../../services/supabase';
 import AdminLayout from '../../components/admin/AdminLayout';
 
@@ -25,8 +25,9 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
 };
 
 export default function AdminDashboard() {
-  const [orders, setOrders] = useState<OrderWithItems[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [orders, setOrders]     = useState<OrderWithItems[]>([]);
+  const [loading, setLoading]   = useState(true);
+  const [confirmDel, setConfirm] = useState<string | null>(null);
 
   useEffect(() => {
     fetchOrders();
@@ -46,6 +47,14 @@ export default function AdminDashboard() {
   async function updateStatus(id: string, status: string) {
     await supabase.from('orders').update({ status }).eq('id', id);
     setOrders(prev => prev.map(o => o.id === id ? { ...o, status: status as DBOrder['status'] } : o));
+  }
+
+  async function handleDelete(id: string) {
+    // deleta itens do pedido primeiro, depois o pedido
+    await supabase.from('order_items').delete().eq('order_id', id);
+    await supabase.from('orders').delete().eq('id', id);
+    setOrders(prev => prev.filter(o => o.id !== id));
+    setConfirm(null);
   }
 
   const today    = new Date().toDateString();
@@ -160,7 +169,7 @@ export default function AdminDashboard() {
                           </span>
                         </td>
                         <td className="px-5 py-3">
-                          <div className="flex gap-1">
+                          <div className="flex gap-1 items-center">
                             {order.status !== 'delivered' && order.status !== 'cancelled' && (
                               <button
                                 onClick={() => updateStatus(order.id, order.status === 'pending' ? 'confirmed' : 'delivered')}
@@ -177,6 +186,26 @@ export default function AdminDashboard() {
                                 title="Cancelar"
                               >
                                 <XCircle size={16} />
+                              </button>
+                            )}
+
+                            {/* Deletar pedido com confirmação inline */}
+                            {confirmDel === order.id ? (
+                              <div className="flex items-center gap-1 bg-red-50 border border-red-200 rounded-lg px-2 py-1">
+                                <span className="text-[0.65rem] text-red-600 font-semibold whitespace-nowrap">Deletar?</span>
+                                <button onClick={() => handleDelete(order.id)}
+                                  className="text-[0.65rem] font-bold bg-red-500 hover:bg-red-600 text-white px-1.5 py-0.5 rounded transition-all">
+                                  Sim
+                                </button>
+                                <button onClick={() => setConfirm(null)}
+                                  className="text-[0.65rem] font-bold bg-gray-200 hover:bg-gray-300 text-gray-600 px-1.5 py-0.5 rounded transition-all">
+                                  Não
+                                </button>
+                              </div>
+                            ) : (
+                              <button onClick={() => setConfirm(order.id)}
+                                className="p-1.5 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all" title="Deletar pedido">
+                                <Trash2 size={15} />
                               </button>
                             )}
                           </div>
