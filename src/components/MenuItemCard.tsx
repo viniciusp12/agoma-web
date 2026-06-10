@@ -78,11 +78,11 @@ export default function MenuItemCard({ item, compact = false }: Props) {
         )}
 
         {/* Price + Add button */}
-        <div className="flex items-center justify-between mt-auto pt-2">
+        <div className="flex flex-col gap-2 mt-auto pt-2">
           <span className="text-[#1A2E17] font-bold text-base">R$ {item.price}</span>
           <button
             onClick={() => startOrder(item)}
-            className="flex items-center gap-1.5 bg-[#1A2E17] hover:bg-[#2B4A26] text-white text-sm font-bold px-3.5 py-2 rounded-xl transition-all hover:scale-105 active:scale-95"
+            className="w-full flex items-center justify-center gap-1.5 bg-[#1A2E17] hover:bg-[#2B4A26] text-white text-sm font-bold px-3 py-2 rounded-xl transition-all hover:scale-105 active:scale-95"
             aria-label={`Adicionar ${item.name}`}
           >
             <Plus size={14} /> Adicionar
