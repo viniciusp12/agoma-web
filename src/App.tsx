@@ -16,6 +16,7 @@ import Pedidos from './pages/Pedidos';
 import MeusPedidos from './pages/MeusPedidos';
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminAnalytics from './pages/admin/AdminAnalytics';
 import AdminCardapio from './pages/admin/AdminCardapio';
 
 function PublicSite() {
@@ -50,8 +51,9 @@ export default function App() {
         <Routes>
           {/* --- Admin --- */}
           <Route path="/admin/login"    element={<AdminLogin />} />
-          <Route path="/admin"          element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
-          <Route path="/admin/cardapio" element={<ProtectedRoute><AdminCardapio /></ProtectedRoute>} />
+          <Route path="/admin"           element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+          <Route path="/admin/dashboard" element={<ProtectedRoute><AdminAnalytics /></ProtectedRoute>} />
+          <Route path="/admin/cardapio"  element={<ProtectedRoute><AdminCardapio /></ProtectedRoute>} />
 
           {/* --- Site público --- */}
           <Route path="/*" element={<PublicSite />} />

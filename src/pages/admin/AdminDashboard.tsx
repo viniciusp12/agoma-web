@@ -15,6 +15,14 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
 }
 
+// Data local no formato YYYY-MM-DD (para comparação com o filtro de dia)
+function localDateKey(d: Date) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 type OrderWithItems = DBOrder & { order_items: DBOrderItem[] };
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
@@ -43,6 +51,8 @@ export default function AdminDashboard() {
   const [confirmDel, setConfirm] = useState<string | null>(null);
   const [cancelId, setCancelId]  = useState<string | null>(null);  // pedido sendo cancelado
   const [cancelReason, setCancelReason] = useState('');            // motivo digitado
+  // Filtro por dia — '' = todos os dias. Padrão: hoje (evita poluição com dias anteriores)
+  const [dayFilter, setDayFilter] = useState<string>(() => localDateKey(new Date()));
   // IDs deletados localmente — impede que polling/realtime ressuscite o pedido
   const deletedIds = useRef(new Set<string>());
 
@@ -155,6 +165,11 @@ export default function AdminDashboard() {
     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
   });
 
+  // Pedidos exibidos na tabela conforme o filtro de dia ('' = todos)
+  const displayedOrders = dayFilter
+    ? orders.filter(o => localDateKey(new Date(o.created_at)) === dayFilter)
+    : orders;
+
   const todayRevenue  = todayOrders.reduce((s, o) => s + Number(o.total), 0);
   const monthRevenue  = monthOrders.reduce((s, o) => s + Number(o.total), 0);
   const avgTicket     = monthOrders.length ? monthRevenue / monthOrders.length : 0;
@@ -174,7 +189,7 @@ export default function AdminDashboard() {
         <div className="mb-6">
           <h1 className="text-2xl font-black text-[#1A2E17]"
             style={{ fontFamily: "'Playfair Display', serif" }}>
-            Dashboard
+            Pedidos
           </h1>
           <p className="text-gray-500 text-sm">
             {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
@@ -197,21 +212,68 @@ export default function AdminDashboard() {
 
         {/* Orders Table */}
         <div className="bg-white rounded-2xl shadow-sm border border-[#E2DAC8] overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-            <h2 className="font-bold text-[#1A1A1A]">Pedidos recentes</h2>
-            <button onClick={() => fetchOrders()}
-              className="text-xs text-[#C4A044] font-semibold hover:underline">
-              Atualizar
-            </button>
+          <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-2">
+              <h2 className="font-bold text-[#1A1A1A]">Pedidos recebidos</h2>
+              <span className="text-xs font-semibold text-gray-400">
+                ({displayedOrders.length})
+              </span>
+            </div>
+
+            {/* Filtro por dia */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                onClick={() => setDayFilter(localDateKey(new Date()))}
+                className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all ${
+                  dayFilter === localDateKey(new Date())
+                    ? 'bg-[#1A2E17] text-white border-[#1A2E17]'
+                    : 'bg-white text-gray-600 border-gray-200 hover:border-[#1A2E17]/40'
+                }`}
+              >
+                Hoje
+              </button>
+              <div className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-lg px-2.5 py-1">
+                <Calendar size={13} className="text-[#C4A044]" />
+                <input
+                  type="date"
+                  value={dayFilter}
+                  max={localDateKey(new Date())}
+                  onChange={(e) => setDayFilter(e.target.value)}
+                  className="text-xs outline-none text-gray-700 bg-transparent"
+                />
+              </div>
+              <button
+                onClick={() => setDayFilter('')}
+                className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all ${
+                  dayFilter === ''
+                    ? 'bg-[#C4A044] text-[#1A2E17] border-[#C4A044]'
+                    : 'bg-white text-gray-600 border-gray-200 hover:border-[#C4A044]/60'
+                }`}
+              >
+                Todos
+              </button>
+              <button onClick={() => fetchOrders()}
+                className="text-xs text-[#C4A044] font-semibold hover:underline ml-1">
+                Atualizar
+              </button>
+            </div>
           </div>
 
           {loading ? (
             <div className="p-10 text-center text-gray-400 text-sm">Carregando...</div>
-          ) : orders.length === 0 ? (
+          ) : displayedOrders.length === 0 ? (
             <div className="p-10 text-center">
               <ShoppingBag size={40} className="mx-auto mb-3 text-gray-200" />
-              <p className="text-gray-400 text-sm">Nenhum pedido ainda</p>
-              <p className="text-gray-300 text-xs mt-1">Os pedidos aparecem aqui quando clientes finalizam pelo WhatsApp</p>
+              <p className="text-gray-400 text-sm">
+                {dayFilter
+                  ? `Nenhum pedido em ${new Date(dayFilter + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}`
+                  : 'Nenhum pedido ainda'}
+              </p>
+              <p className="text-gray-300 text-xs mt-1">
+                {dayFilter
+                  ? 'Tente outro dia ou clique em "Todos" para ver o histórico completo.'
+                  : 'Os pedidos aparecem aqui quando clientes finalizam pelo site.'}
+              </p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -224,7 +286,7 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
-                  {orders.map(order => {
+                  {displayedOrders.map(order => {
                     const st = STATUS_LABELS[order.status] ?? STATUS_LABELS.pending;
                     const addr = order.address as Record<string, string> | null;
                     return (

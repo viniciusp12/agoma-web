@@ -1,10 +1,11 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, UtensilsCrossed, LogOut, ExternalLink } from 'lucide-react';
+import { LayoutDashboard, UtensilsCrossed, LogOut, ExternalLink, ClipboardList } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const navItems = [
-  { to: '/admin',         label: 'Dashboard',  icon: LayoutDashboard, end: true },
-  { to: '/admin/cardapio', label: 'Cardápio',   icon: UtensilsCrossed, end: false },
+  { to: '/admin',           label: 'Pedidos',   icon: ClipboardList,   end: true },
+  { to: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard, end: true },
+  { to: '/admin/cardapio',  label: 'Cardápio',  icon: UtensilsCrossed, end: false },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
