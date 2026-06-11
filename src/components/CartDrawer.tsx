@@ -57,6 +57,12 @@ export default function CartDrawer() {
 
   async function handleFinalizarPedido() {
     await saveOrder();
+    // Snapshot do pedido para a tela /pedidos (sobrevive ao clearCart e ao F5)
+    localStorage.setItem(
+      'agoma_last_order_snapshot',
+      JSON.stringify({ items, address, total: totalPrice }),
+    );
+    clearCart();      // esvazia o carrinho → some a sacola flutuante
     closeCart();
     navigate('/pedidos');
   }

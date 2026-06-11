@@ -3,6 +3,21 @@ import { useNavigate } from 'react-router-dom';
 import { CheckCircle, ShoppingBag, ArrowLeft, Clock, ChefHat, Bike, PartyPopper } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { supabase } from '../services/supabase';
+import type { CartItem, Address } from '../types';
+
+interface OrderSnapshot {
+  items: CartItem[];
+  address: Address | null;
+  total: number;
+}
+
+function loadSnapshot(): OrderSnapshot {
+  try {
+    const snap = JSON.parse(localStorage.getItem('agoma_last_order_snapshot') ?? 'null');
+    if (snap && Array.isArray(snap.items)) return snap;
+  } catch { /* ignore */ }
+  return { items: [], address: null, total: 0 };
+}
 
 function formatCurrency(value: number) {
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -25,9 +40,11 @@ const STATUS_INDEX: Record<string, number> = {
 };
 
 export default function Pedidos() {
-  const { state, clearCart, totalPrice } = useCart();
-  const { items, address } = state;
+  const { clearCart } = useCart();
   const navigate = useNavigate();
+
+  // Lê o snapshot do pedido (carrinho já foi esvaziado ao finalizar)
+  const [{ items, address, total }] = useState<OrderSnapshot>(loadSnapshot);
 
   const [orderStatus, setOrderStatus] = useState<string>('pending');
   const [cancelled, setCancelled]     = useState(false);
@@ -80,6 +97,7 @@ export default function Pedidos() {
   function handleVoltar() {
     clearCart();
     localStorage.removeItem('agoma_last_order_id');
+    localStorage.removeItem('agoma_last_order_snapshot');
     navigate('/');
   }
 
@@ -195,7 +213,7 @@ export default function Pedidos() {
           </div>
           <div className="flex items-center justify-between px-6 py-4 bg-[#1A2E17]/5 border-t border-[#1A2E17]/10">
             <span className="font-bold text-[#1A1A1A]">Total</span>
-            <span className="text-xl font-black text-[#1A2E17]">{formatCurrency(totalPrice)}</span>
+            <span className="text-xl font-black text-[#1A2E17]">{formatCurrency(total)}</span>
           </div>
         </div>
 
