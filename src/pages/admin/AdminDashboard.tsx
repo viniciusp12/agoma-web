@@ -18,10 +18,23 @@ function formatDate(iso: string) {
 type OrderWithItems = DBOrder & { order_items: DBOrderItem[] };
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  pending:   { label: 'Pendente',  color: 'bg-yellow-100 text-yellow-700' },
-  confirmed: { label: 'Confirmado', color: 'bg-blue-100 text-blue-700'   },
-  delivered: { label: 'Entregue',  color: 'bg-green-100 text-green-700'  },
-  cancelled: { label: 'Cancelado', color: 'bg-red-100 text-red-600'      },
+  pending:          { label: 'Pendente',          color: 'bg-yellow-100 text-yellow-700' },
+  preparing:        { label: 'Em Preparo',         color: 'bg-blue-100 text-blue-700'    },
+  out_for_delivery: { label: 'Saiu p/ Entrega',   color: 'bg-purple-100 text-purple-700'},
+  delivered:        { label: 'Entregue',           color: 'bg-green-100 text-green-700'  },
+  cancelled:        { label: 'Cancelado',          color: 'bg-red-100 text-red-600'      },
+};
+
+// Avanço automático de status
+const NEXT_STATUS: Record<string, string> = {
+  pending:          'preparing',
+  preparing:        'out_for_delivery',
+  out_for_delivery: 'delivered',
+};
+const NEXT_LABEL: Record<string, string> = {
+  pending:          'Confirmar pedido',
+  preparing:        'Saiu para entrega',
+  out_for_delivery: 'Marcar entregue',
 };
 
 export default function AdminDashboard() {
@@ -129,7 +142,7 @@ export default function AdminDashboard() {
                 <thead className="bg-gray-50 border-b border-gray-100">
                   <tr>
                     {['Data/Hora', 'Itens', 'Endereço', 'Total', 'Status', 'Ação'].map(h => (
-                      <th key={h} className="text-left px-5 py-3 text-xs font-bold text-gray-500 uppercase tracking-wide">{h}</th>
+                      <th key={h} className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wide">{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -145,38 +158,45 @@ export default function AdminDashboard() {
                             <Clock size={11} /> {formatTime(order.created_at)}
                           </p>
                         </td>
-                        <td className="px-5 py-3">
-                          <div className="flex flex-col gap-0.5 max-w-[200px]">
+                        <td className="px-4 py-3">
+                          <div className="flex flex-col gap-0.5 max-w-[220px]">
                             {order.order_items?.slice(0, 2).map((oi, i) => (
-                              <p key={i} className="text-gray-700 truncate text-xs">
-                                {oi.quantity}x {oi.item_name}
-                              </p>
+                              <div key={i}>
+                                <p className="text-gray-700 truncate text-xs">
+                                  {oi.quantity}x {oi.item_name}
+                                </p>
+                                {oi.notes && (
+                                  <p className="text-[0.65rem] text-[#1A2E17] italic">📝 {oi.notes}</p>
+                                )}
+                              </div>
                             ))}
                             {(order.order_items?.length ?? 0) > 2 && (
                               <p className="text-gray-400 text-xs">+{order.order_items.length - 2} itens</p>
                             )}
                           </div>
                         </td>
-                        <td className="px-5 py-3 text-xs text-gray-500 max-w-[160px]">
+                        <td className="px-4 py-3 text-xs text-gray-500 max-w-[140px]">
                           {addr ? `${addr.street}, ${addr.number}` : '—'}
                         </td>
-                        <td className="px-5 py-3 font-bold text-[#1A2E17] whitespace-nowrap">
+                        <td className="px-4 py-3 font-bold text-[#1A2E17] whitespace-nowrap">
                           {formatCurrency(Number(order.total))}
                         </td>
-                        <td className="px-5 py-3">
+                        <td className="px-4 py-3">
                           <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${st.color}`}>
                             {st.label}
                           </span>
                         </td>
-                        <td className="px-5 py-3">
-                          <div className="flex gap-1 items-center">
-                            {order.status !== 'delivered' && order.status !== 'cancelled' && (
+                        <td className="px-4 py-3">
+                          <div className="flex gap-1 items-center flex-wrap">
+                            {/* Avança status no fluxo */}
+                            {NEXT_STATUS[order.status] && (
                               <button
-                                onClick={() => updateStatus(order.id, order.status === 'pending' ? 'confirmed' : 'delivered')}
-                                className="p-1.5 text-green-500 hover:text-green-700 hover:bg-green-50 rounded-lg transition-all"
-                                title={order.status === 'pending' ? 'Confirmar' : 'Marcar entregue'}
+                                onClick={() => updateStatus(order.id, NEXT_STATUS[order.status])}
+                                className="flex items-center gap-1 text-[0.65rem] font-bold bg-[#1A2E17] hover:bg-[#2B4A26] text-white px-2 py-1 rounded-lg transition-all whitespace-nowrap"
+                                title={NEXT_LABEL[order.status]}
                               >
-                                <CheckCircle size={16} />
+                                <CheckCircle size={11} />
+                                {NEXT_LABEL[order.status]}
                               </button>
                             )}
                             {order.status !== 'cancelled' && order.status !== 'delivered' && (

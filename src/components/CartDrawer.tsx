@@ -46,6 +46,8 @@ export default function CartDrawer() {
           };
         });
         await supabase.from('order_items').insert(orderItems);
+        // Guarda o ID para o cliente rastrear o status
+        localStorage.setItem('agoma_last_order_id', order.id);
       }
     } catch { /* silencioso */ }
   }

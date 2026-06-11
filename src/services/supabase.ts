@@ -36,7 +36,7 @@ export interface DBOrder {
   id: string;
   total: number;
   address: Record<string, string> | null;
-  status: 'pending' | 'confirmed' | 'delivered' | 'cancelled';
+  status: 'pending' | 'preparing' | 'out_for_delivery' | 'delivered' | 'cancelled';
   created_at: string;
 }
 
@@ -50,5 +50,6 @@ export interface DBOrderItem {
   is_combo: boolean;
   combo_drink: string | null;
   additionals: { id: string; name: string; price: number }[];
+  notes: string | null;
   subtotal: number;
 }
