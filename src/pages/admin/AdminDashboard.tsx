@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ShoppingBag, TrendingUp, Calendar, Clock, CheckCircle, XCircle, Trash2 } from 'lucide-react';
 import { supabase, type DBOrder, type DBOrderItem } from '../../services/supabase';
 import AdminLayout from '../../components/admin/AdminLayout';
@@ -41,6 +41,8 @@ export default function AdminDashboard() {
   const [orders, setOrders]     = useState<OrderWithItems[]>([]);
   const [loading, setLoading]   = useState(true);
   const [confirmDel, setConfirm] = useState<string | null>(null);
+  // IDs deletados localmente — impede que polling/realtime ressuscite o pedido
+  const deletedIds = useRef(new Set<string>());
 
   useEffect(() => {
     fetchOrders();
@@ -69,7 +71,10 @@ export default function AdminDashboard() {
       .select('*, order_items(*)')
       .order('created_at', { ascending: false })
       .limit(100);
-    setOrders((data as OrderWithItems[]) ?? []);
+    // Filtra IDs já deletados para evitar race condition com polling/realtime
+    const filtered = ((data as OrderWithItems[]) ?? [])
+      .filter(o => !deletedIds.current.has(o.id));
+    setOrders(filtered);
     if (!silent) setLoading(false);
   }
 
@@ -79,11 +84,21 @@ export default function AdminDashboard() {
   }
 
   async function handleDelete(id: string) {
-    // deleta itens do pedido primeiro, depois o pedido
-    await supabase.from('order_items').delete().eq('order_id', id);
-    await supabase.from('orders').delete().eq('id', id);
+    // Marca como deletado ANTES de qualquer await — impede que polling ressuscite
+    deletedIds.current.add(id);
     setOrders(prev => prev.filter(o => o.id !== id));
     setConfirm(null);
+
+    // Remove do banco (itens primeiro por FK, depois o pedido)
+    await supabase.from('order_items').delete().eq('order_id', id);
+    await supabase.from('orders').delete().eq('id', id);
+
+    // Remove do localStorage do cliente (last_order e histórico)
+    if (localStorage.getItem('agoma_last_order_id') === id) {
+      localStorage.removeItem('agoma_last_order_id');
+    }
+    const existing: string[] = JSON.parse(localStorage.getItem('agoma_order_ids') ?? '[]');
+    localStorage.setItem('agoma_order_ids', JSON.stringify(existing.filter(x => x !== id)));
   }
 
   const today    = new Date().toDateString();
