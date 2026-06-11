@@ -20,7 +20,6 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminAnalytics from './pages/admin/AdminAnalytics';
 import AdminCardapio from './pages/admin/AdminCardapio';
 
-
 function PublicSite() {
   return (
     <CartProvider>
