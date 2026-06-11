@@ -14,6 +14,7 @@ import Home from './pages/Home';
 import Cardapio from './pages/Cardapio';
 import Pedidos from './pages/Pedidos';
 import MeusPedidos from './pages/MeusPedidos';
+import Pagamento from './pages/Pagamento';
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminAnalytics from './pages/admin/AdminAnalytics';
@@ -26,10 +27,11 @@ function PublicSite() {
         <Header />
         <main className="flex-1">
           <Routes>
-            <Route path="/"         element={<Home />} />
-            <Route path="/cardapio" element={<Cardapio />} />
-            <Route path="/pedidos"       element={<Pedidos />} />
+            <Route path="/"             element={<Home />} />
+            <Route path="/cardapio"     element={<Cardapio />} />
+            <Route path="/pedidos"      element={<Pedidos />} />
             <Route path="/meus-pedidos" element={<MeusPedidos />} />
+            <Route path="/pagamento"    element={<Pagamento />} />
           </Routes>
         </main>
         <Footer />
