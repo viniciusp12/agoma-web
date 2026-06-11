@@ -27,27 +27,29 @@ function formatDateTime(iso: string) {
 }
 
 export default function MeusPedidos() {
-  const [orders, setOrders]   = useState<OrderWithItems[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [orders, setOrders]     = useState<OrderWithItems[]>([]);
+  const [loading, setLoading]   = useState(true);
   const [expanded, setExpanded] = useState<string | null>(null);
 
   useEffect(() => {
     const ids: string[] = JSON.parse(localStorage.getItem('agoma_order_ids') ?? '[]');
     if (ids.length === 0) { setLoading(false); return; }
 
-    // Fetch orders
-    (async () => {
-      setLoading(true);
+    async function loadOrders(silent: boolean) {
+      if (!silent) setLoading(true);
       const { data } = await supabase
         .from('orders')
         .select('*, order_items(*)')
         .in('id', ids)
         .order('created_at', { ascending: false });
-      setOrders((data as OrderWithItems[]) ?? []);
-      setLoading(false);
-    })();
+      if (data) setOrders(data as OrderWithItems[]);
+      if (!silent) setLoading(false);
+    }
 
-    // Realtime: atualiza status ao vivo
+    // Carga inicial
+    loadOrders(false);
+
+    // Realtime — atualiza status ao vivo quando o admin muda
     const channel = supabase
       .channel('meus_pedidos_realtime')
       .on(
@@ -64,7 +66,13 @@ export default function MeusPedidos() {
       )
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    // Polling a cada 8 s como fallback (garante atualização mesmo sem realtime)
+    const timer = setInterval(() => loadOrders(true), 8_000);
+
+    return () => {
+      clearInterval(timer);
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   /* ── Loading ── */
@@ -165,7 +173,7 @@ export default function MeusPedidos() {
                     )}
                   </div>
 
-                  {/* Toggle button (only if not cancelled) */}
+                  {/* Toggle button (apenas se não cancelado) */}
                   {!isCancelled && (
                     <button
                       onClick={() => setExpanded(isExpanded ? null : order.id)}
@@ -180,7 +188,7 @@ export default function MeusPedidos() {
                   )}
                 </div>
 
-                {/* Status tracker (expanded) */}
+                {/* Status tracker expandido */}
                 {isExpanded && !isCancelled && (
                   <div className="border-t border-[#E2DAC8] bg-[#F9F6EF] px-5 py-4">
                     <div className="flex flex-col gap-3">
@@ -190,7 +198,6 @@ export default function MeusPedidos() {
                         const active = idx === stepIdx;
                         return (
                           <div key={step.key} className="flex items-center gap-3">
-                            {/* Icon circle */}
                             <div
                               className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all ${
                                 done   ? 'bg-green-500 text-white' :
@@ -200,8 +207,6 @@ export default function MeusPedidos() {
                             >
                               <Icon size={16} />
                             </div>
-
-                            {/* Label */}
                             <p
                               className={`flex-1 text-sm font-bold ${
                                 done   ? 'text-green-600' :
@@ -211,8 +216,6 @@ export default function MeusPedidos() {
                             >
                               {step.label}
                             </p>
-
-                            {/* Badge */}
                             {active && (
                               <span className="text-[0.6rem] font-black bg-[#C4A044] text-white px-2 py-0.5 rounded-full uppercase tracking-wide">
                                 Agora

@@ -45,28 +45,32 @@ export default function AdminDashboard() {
   useEffect(() => {
     fetchOrders();
 
-    // Realtime: atualiza automaticamente sem precisar dar F5
+    // Realtime — dispara em qualquer evento na tabela orders
     const channel = supabase
       .channel('admin_orders_realtime')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'orders' },
-        () => { fetchOrders(); }
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+        fetchOrders(true); // atualização silenciosa (sem spinner)
+      })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    // Polling a cada 8 s como fallback (garante atualização mesmo sem realtime)
+    const timer = setInterval(() => fetchOrders(true), 8_000);
+
+    return () => {
+      clearInterval(timer);
+      supabase.removeChannel(channel);
+    };
   }, []);
 
-  async function fetchOrders() {
-    setLoading(true);
+  async function fetchOrders(silent = false) {
+    if (!silent) setLoading(true);
     const { data } = await supabase
       .from('orders')
       .select('*, order_items(*)')
       .order('created_at', { ascending: false })
       .limit(100);
     setOrders((data as OrderWithItems[]) ?? []);
-    setLoading(false);
+    if (!silent) setLoading(false);
   }
 
   async function updateStatus(id: string, status: string) {

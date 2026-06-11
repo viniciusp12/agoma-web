@@ -38,26 +38,35 @@ export default function Pedidos() {
     const orderId = localStorage.getItem('agoma_last_order_id');
     if (!orderId) return;
 
-    // Busca status atual
-    supabase.from('orders').select('status').eq('id', orderId).single()
-      .then(({ data }) => {
-        if (data?.status === 'cancelled') setCancelled(true);
-        else if (data?.status) setOrderStatus(data.status);
-      });
+    function applyStatus(status: string) {
+      if (status === 'cancelled') setCancelled(true);
+      else setOrderStatus(status);
+    }
 
-    // Realtime — atualiza status assim que o admin muda
+    function pollStatus() {
+      supabase.from('orders').select('status').eq('id', orderId!).single()
+        .then(({ data }) => { if (data?.status) applyStatus(data.status); });
+    }
+
+    // Busca status inicial
+    pollStatus();
+
+    // Realtime — atualiza instantaneamente quando o admin muda o status
     const channel = supabase
       .channel(`order_track_${orderId}`)
       .on('postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${orderId}` },
-        ({ new: row }) => {
-          if (row.status === 'cancelled') setCancelled(true);
-          else setOrderStatus(row.status as string);
-        }
+        ({ new: row }) => { if (row.status) applyStatus(row.status as string); }
       )
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    // Polling a cada 5 s como fallback (garante atualização mesmo sem realtime)
+    const timer = setInterval(pollStatus, 5_000);
+
+    return () => {
+      clearInterval(timer);
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   function handleVoltar() {
