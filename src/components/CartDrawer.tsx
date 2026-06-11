@@ -1,4 +1,4 @@
-import { X, Trash2, Plus, Minus, ShoppingBag } from 'lucide-react';
+import { X, Trash2, Plus, Minus, ShoppingBag, Pencil } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { supabase } from '../services/supabase';
@@ -13,8 +13,8 @@ function formatMeat(point?: string) {
 }
 
 export default function CartDrawer() {
-  const { state, closeCart, removeFromCart, updateQty, clearCart, totalPrice, changeAddress } = useCart();
-  const { isCartOpen, items, address } = state;
+  const { state, closeCart, removeFromCart, updateQty, clearCart, totalPrice, changeAddress, startEdit, setCustomerName } = useCart();
+  const { isCartOpen, items, address, customerName } = state;
   const navigate = useNavigate();
 
   if (!isCartOpen) return null;
@@ -23,7 +23,7 @@ export default function CartDrawer() {
     try {
       const { data: order } = await supabase
         .from('orders')
-        .insert([{ total: totalPrice, address, status: 'pending' }])
+        .insert([{ total: totalPrice, address, status: 'pending', customer_name: customerName.trim() || null }])
         .select()
         .single();
 
@@ -106,6 +106,18 @@ export default function CartDrawer() {
             </button>
           </div>
         )}
+        {/* Nome do cliente */}
+        <div className="mx-5 mt-3">
+          <input
+            type="text"
+            value={customerName}
+            onChange={(e) => setCustomerName(e.target.value)}
+            placeholder="Seu nome *"
+            maxLength={60}
+            className="w-full px-3 py-2 rounded-xl border-2 border-gray-200 focus:border-[#1A2E17] outline-none text-sm placeholder:text-gray-400 transition-colors"
+          />
+        </div>
+
         {/* Items */}
         <div className="flex-1 overflow-y-auto px-5 py-3 flex flex-col gap-3">
           {items.length === 0 ? (
@@ -154,13 +166,17 @@ export default function CartDrawer() {
                           <Plus size={12} />
                         </button>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
                         <span className="text-sm font-bold text-[#1A2E17]">
                           {formatCurrency(unit * ci.quantity)}
                         </span>
+                        <button onClick={() => startEdit(ci)}
+                          className="text-blue-400 hover:text-blue-600 p-0.5" title="Editar item">
+                          <Pencil size={13} />
+                        </button>
                         <button onClick={() => removeFromCart(ci.cartId)}
-                          className="text-red-400 hover:text-red-600">
-                          <Trash2 size={14} />
+                          className="text-red-400 hover:text-red-600 p-0.5">
+                          <Trash2 size={13} />
                         </button>
                       </div>
                     </div>
@@ -177,9 +193,13 @@ export default function CartDrawer() {
               <span className="text-gray-600 font-medium">Total do pedido</span>
               <span className="text-xl font-black text-[#1A2E17]">{formatCurrency(totalPrice)}</span>
             </div>
+            {!customerName.trim() && (
+              <p className="text-xs text-red-400 text-center -mb-1">Digite seu nome para finalizar</p>
+            )}
             <button
               onClick={handleFinalizarPedido}
-              className="w-full bg-[#1A2E17] hover:bg-[#243d20] text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all hover:-translate-y-0.5"
+              disabled={!customerName.trim()}
+              className="w-full bg-[#1A2E17] hover:bg-[#243d20] disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all hover:-translate-y-0.5"
             >
               <ShoppingBag size={18} />
               Finalizar Pedido

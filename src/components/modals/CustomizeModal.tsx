@@ -18,7 +18,8 @@ function formatCurrency(value: number) {
 export default function CustomizeModal() {
   const { state, addToCart, setStep, closeModals } = useCart();
   const { items: menuItems } = useMenuItems();
-  const item = state.pendingItem;
+  const item        = state.pendingItem;
+  const editing     = state.editingCartItem;   // se não-nulo, estamos editando
 
   const AVAILABLE_ADDITIONALS: CartItemAdditional[] = menuItems
     .filter(i => i.category === 'adicionais')
@@ -33,15 +34,24 @@ export default function CustomizeModal() {
 
   useEffect(() => {
     if (state.step === 'customize') {
-      setQty(1); setAdd([]); setCombo(false); setMeat('ao_ponto'); setComboDrink(''); setObs('');
+      // Se estiver editando, pre-preenche com os valores existentes
+      if (editing) {
+        setQty(editing.quantity);
+        setMeat(editing.meatPoint ?? 'ao_ponto');
+        setAdd(editing.additionals);
+        setCombo(editing.isCombo);
+        setComboDrink(editing.comboDrink ?? '');
+        setObs(editing.observations ?? '');
+      } else {
+        setQty(1); setAdd([]); setCombo(false); setMeat('ao_ponto'); setComboDrink(''); setObs('');
+      }
       document.body.style.overflow = 'hidden';
     }
     return () => { document.body.style.overflow = ''; };
-  }, [state.step]);
+  }, [state.step]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (state.step !== 'customize' || !item) return null;
 
-  // item is guaranteed non-null here
   const safeItem = item;
 
   const addPrice   = additionals.reduce((s, a) => s + a.price, 0);
@@ -58,7 +68,7 @@ export default function CustomizeModal() {
   }
 
   function handleAdd() {
-    const cartId = `${safeItem.id}-${Date.now()}`;
+    const cartId = editing ? editing.cartId : `${safeItem.id}-${Date.now()}`;
     addToCart({
       cartId,
       item: safeItem,
@@ -68,7 +78,7 @@ export default function CustomizeModal() {
       isCombo,
       comboDrink: isCombo ? comboDrink : undefined,
       observations: observations.trim() || undefined,
-    });
+    }, editing?.cartId /* replaceId */);
   }
 
   const showAdditionals = safeItem.category !== 'bebidas'
@@ -328,13 +338,13 @@ export default function CustomizeModal() {
             </button>
           </div>
 
-          {/* Add button */}
+          {/* Add / Save button */}
           <button
             onClick={handleAdd}
             disabled={isCombo && !comboDrink}
             className="flex-1 bg-[#1A2E17] hover:bg-[#2B4A26] disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3 rounded-xl transition-all flex items-center justify-between px-4"
           >
-            <span>Adicionar</span>
+            <span>{editing ? 'Salvar alterações' : 'Adicionar'}</span>
             <span>{formatCurrency(total)}</span>
           </button>
         </div>

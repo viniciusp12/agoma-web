@@ -141,7 +141,7 @@ export default function AdminDashboard() {
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 border-b border-gray-100">
                   <tr>
-                    {['Data/Hora', 'Itens', 'Endereço', 'Total', 'Status', 'Ação'].map(h => (
+                    {['Data/Hora', 'Cliente', 'Itens', 'Endereço', 'Total', 'Status', 'Ação'].map(h => (
                       <th key={h} className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wide">{h}</th>
                     ))}
                   </tr>
@@ -156,6 +156,11 @@ export default function AdminDashboard() {
                           <p className="font-semibold text-[#1A1A1A]">{formatDate(order.created_at)}</p>
                           <p className="text-gray-400 text-xs flex items-center gap-1">
                             <Clock size={11} /> {formatTime(order.created_at)}
+                          </p>
+                        </td>
+                        <td className="px-4 py-3">
+                          <p className="font-semibold text-sm text-[#1A1A1A]">
+                            {order.customer_name ?? <span className="text-gray-300 italic text-xs">—</span>}
                           </p>
                         </td>
                         <td className="px-4 py-3">
