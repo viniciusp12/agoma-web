@@ -138,7 +138,7 @@ export default function AdminDashboard() {
         <div className="bg-white rounded-2xl shadow-sm border border-[#E2DAC8] overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
             <h2 className="font-bold text-[#1A1A1A]">Pedidos recentes</h2>
-            <button onClick={fetchOrders}
+            <button onClick={() => fetchOrders()}
               className="text-xs text-[#C4A044] font-semibold hover:underline">
               Atualizar
             </button>
