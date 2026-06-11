@@ -41,6 +41,8 @@ export default function AdminDashboard() {
   const [orders, setOrders]     = useState<OrderWithItems[]>([]);
   const [loading, setLoading]   = useState(true);
   const [confirmDel, setConfirm] = useState<string | null>(null);
+  const [cancelId, setCancelId]  = useState<string | null>(null);  // pedido sendo cancelado
+  const [cancelReason, setCancelReason] = useState('');            // motivo digitado
   // IDs deletados localmente — impede que polling/realtime ressuscite o pedido
   const deletedIds = useRef(new Set<string>());
 
@@ -81,6 +83,19 @@ export default function AdminDashboard() {
   async function updateStatus(id: string, status: string) {
     await supabase.from('orders').update({ status }).eq('id', id);
     setOrders(prev => prev.map(o => o.id === id ? { ...o, status: status as DBOrder['status'] } : o));
+  }
+
+  async function confirmCancel(id: string) {
+    const reason = cancelReason.trim();
+    if (!reason) return;  // motivo é obrigatório
+    await supabase.from('orders')
+      .update({ status: 'cancelled', cancel_reason: reason })
+      .eq('id', id);
+    setOrders(prev => prev.map(o =>
+      o.id === id ? { ...o, status: 'cancelled', cancel_reason: reason } : o
+    ));
+    setCancelId(null);
+    setCancelReason('');
   }
 
   async function handleDelete(id: string) {
@@ -235,50 +250,81 @@ export default function AdminDashboard() {
                           <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${st.color}`}>
                             {st.label}
                           </span>
+                          {order.status === 'cancelled' && order.cancel_reason && (
+                            <p className="text-[0.65rem] text-red-500 italic mt-1 max-w-[150px]">
+                              {order.cancel_reason}
+                            </p>
+                          )}
                         </td>
                         <td className="px-4 py-3">
-                          <div className="flex gap-1 items-center flex-wrap">
-                            {/* Avança status no fluxo */}
-                            {NEXT_STATUS[order.status] && (
+                          {cancelId === order.id ? (
+                            /* Formulário inline: motivo do cancelamento */
+                            <div className="flex items-center gap-1 bg-red-50 border border-red-200 rounded-lg px-2 py-1.5">
+                              <input
+                                autoFocus
+                                value={cancelReason}
+                                onChange={(e) => setCancelReason(e.target.value)}
+                                onKeyDown={(e) => { if (e.key === 'Enter') confirmCancel(order.id); }}
+                                placeholder="Motivo do cancelamento"
+                                maxLength={120}
+                                className="text-[0.7rem] px-2 py-1 rounded border border-red-200 outline-none focus:border-red-400 w-40"
+                              />
                               <button
-                                onClick={() => updateStatus(order.id, NEXT_STATUS[order.status])}
-                                className="flex items-center gap-1 text-[0.65rem] font-bold bg-[#1A2E17] hover:bg-[#2B4A26] text-white px-2 py-1 rounded-lg transition-all whitespace-nowrap"
-                                title={NEXT_LABEL[order.status]}
-                              >
-                                <CheckCircle size={11} />
-                                {NEXT_LABEL[order.status]}
+                                onClick={() => confirmCancel(order.id)}
+                                disabled={!cancelReason.trim()}
+                                className="text-[0.65rem] font-bold bg-red-500 hover:bg-red-600 disabled:opacity-40 disabled:cursor-not-allowed text-white px-2 py-1 rounded transition-all whitespace-nowrap">
+                                Cancelar pedido
                               </button>
-                            )}
-                            {order.status !== 'cancelled' && order.status !== 'delivered' && (
                               <button
-                                onClick={() => updateStatus(order.id, 'cancelled')}
-                                className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                                title="Cancelar"
-                              >
-                                <XCircle size={16} />
+                                onClick={() => { setCancelId(null); setCancelReason(''); }}
+                                className="text-[0.65rem] font-bold bg-gray-200 hover:bg-gray-300 text-gray-600 px-2 py-1 rounded transition-all">
+                                Voltar
                               </button>
-                            )}
+                            </div>
+                          ) : (
+                            <div className="flex gap-1 items-center flex-wrap">
+                              {/* Avança status no fluxo */}
+                              {NEXT_STATUS[order.status] && (
+                                <button
+                                  onClick={() => updateStatus(order.id, NEXT_STATUS[order.status])}
+                                  className="flex items-center gap-1 text-[0.65rem] font-bold bg-[#1A2E17] hover:bg-[#2B4A26] text-white px-2 py-1 rounded-lg transition-all whitespace-nowrap"
+                                  title={NEXT_LABEL[order.status]}
+                                >
+                                  <CheckCircle size={11} />
+                                  {NEXT_LABEL[order.status]}
+                                </button>
+                              )}
+                              {order.status !== 'cancelled' && order.status !== 'delivered' && (
+                                <button
+                                  onClick={() => { setCancelId(order.id); setCancelReason(''); }}
+                                  className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                                  title="Cancelar"
+                                >
+                                  <XCircle size={16} />
+                                </button>
+                              )}
 
-                            {/* Deletar pedido com confirmação inline */}
-                            {confirmDel === order.id ? (
-                              <div className="flex items-center gap-1 bg-red-50 border border-red-200 rounded-lg px-2 py-1">
-                                <span className="text-[0.65rem] text-red-600 font-semibold whitespace-nowrap">Deletar?</span>
-                                <button onClick={() => handleDelete(order.id)}
-                                  className="text-[0.65rem] font-bold bg-red-500 hover:bg-red-600 text-white px-1.5 py-0.5 rounded transition-all">
-                                  Sim
+                              {/* Deletar pedido com confirmação inline */}
+                              {confirmDel === order.id ? (
+                                <div className="flex items-center gap-1 bg-red-50 border border-red-200 rounded-lg px-2 py-1">
+                                  <span className="text-[0.65rem] text-red-600 font-semibold whitespace-nowrap">Deletar?</span>
+                                  <button onClick={() => handleDelete(order.id)}
+                                    className="text-[0.65rem] font-bold bg-red-500 hover:bg-red-600 text-white px-1.5 py-0.5 rounded transition-all">
+                                    Sim
+                                  </button>
+                                  <button onClick={() => setConfirm(null)}
+                                    className="text-[0.65rem] font-bold bg-gray-200 hover:bg-gray-300 text-gray-600 px-1.5 py-0.5 rounded transition-all">
+                                    Não
+                                  </button>
+                                </div>
+                              ) : (
+                                <button onClick={() => setConfirm(order.id)}
+                                  className="p-1.5 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all" title="Deletar pedido">
+                                  <Trash2 size={15} />
                                 </button>
-                                <button onClick={() => setConfirm(null)}
-                                  className="text-[0.65rem] font-bold bg-gray-200 hover:bg-gray-300 text-gray-600 px-1.5 py-0.5 rounded transition-all">
-                                  Não
-                                </button>
-                              </div>
-                            ) : (
-                              <button onClick={() => setConfirm(order.id)}
-                                className="p-1.5 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all" title="Deletar pedido">
-                                <Trash2 size={15} />
-                              </button>
-                            )}
-                          </div>
+                              )}
+                            </div>
+                          )}
                         </td>
                       </tr>
                     );

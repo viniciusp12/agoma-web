@@ -38,6 +38,7 @@ export interface DBOrder {
   address: Record<string, string> | null;
   status: 'pending' | 'preparing' | 'out_for_delivery' | 'delivered' | 'cancelled';
   customer_name: string | null;
+  cancel_reason: string | null;
   created_at: string;
 }
 

@@ -183,6 +183,15 @@ export default function MeusPedidos() {
                     )}
                   </div>
 
+                  {/* Motivo do cancelamento */}
+                  {isCancelled && order.cancel_reason && (
+                    <div className="px-3 py-2 bg-red-50 border border-red-200 rounded-xl">
+                      <p className="text-xs text-red-600">
+                        <span className="font-semibold">Motivo do cancelamento:</span> {order.cancel_reason}
+                      </p>
+                    </div>
+                  )}
+
                   {/* Toggle button (apenas se não cancelado) */}
                   {!isCancelled && (
                     <button

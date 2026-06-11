@@ -49,6 +49,7 @@ export default function Pedidos() {
   const [orderStatus, setOrderStatus] = useState<string>('pending');
   const [cancelled, setCancelled]     = useState(false);
   const [removed, setRemoved]         = useState(false);
+  const [cancelReason, setCancelReason] = useState<string>('');
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -60,16 +61,18 @@ export default function Pedidos() {
     const orderId = localStorage.getItem('agoma_last_order_id');
     if (!orderId) return;
 
-    function applyStatus(status: string) {
-      if (status === 'cancelled') setCancelled(true);
-      else setOrderStatus(status);
+    function applyStatus(status: string, reason?: string | null) {
+      if (status === 'cancelled') {
+        setCancelled(true);
+        if (reason) setCancelReason(reason);
+      } else setOrderStatus(status);
     }
 
     function pollStatus() {
-      supabase.from('orders').select('status').eq('id', orderId!).maybeSingle()
+      supabase.from('orders').select('status, cancel_reason').eq('id', orderId!).maybeSingle()
         .then(({ data }) => {
           if (data === null) setRemoved(true);          // pedido foi deletado
-          else if (data.status) applyStatus(data.status);
+          else if (data.status) applyStatus(data.status, data.cancel_reason);
         });
     }
 
@@ -81,7 +84,7 @@ export default function Pedidos() {
       .channel(`order_track_${orderId}`)
       .on('postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${orderId}` },
-        ({ new: row }) => { if (row.status) applyStatus(row.status as string); }
+        ({ new: row }) => { if (row.status) applyStatus(row.status as string, row.cancel_reason as string | null); }
       )
       .on('postgres_changes',
         { event: 'DELETE', schema: 'public', table: 'orders', filter: `id=eq.${orderId}` },
@@ -134,11 +137,17 @@ export default function Pedidos() {
               </div>
             </div>
           ) : cancelled ? (
-            <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+            <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
               <span className="text-2xl">❌</span>
               <div>
                 <p className="font-bold text-red-700 text-sm">Pedido cancelado</p>
-                <p className="text-xs text-red-500">Entre em contato conosco se precisar de ajuda.</p>
+                {cancelReason ? (
+                  <p className="text-xs text-red-600 mt-0.5">
+                    <span className="font-semibold">Motivo:</span> {cancelReason}
+                  </p>
+                ) : (
+                  <p className="text-xs text-red-500">Entre em contato conosco se precisar de ajuda.</p>
+                )}
               </div>
             </div>
           ) : (
