@@ -84,16 +84,30 @@ export default function AdminDashboard() {
   }
 
   async function handleDelete(id: string) {
-    // Marca como deletado ANTES de qualquer await — impede que polling ressuscite
-    deletedIds.current.add(id);
-    setOrders(prev => prev.filter(o => o.id !== id));
     setConfirm(null);
 
-    // Remove do banco (itens primeiro por FK, depois o pedido)
-    await supabase.from('order_items').delete().eq('order_id', id);
-    await supabase.from('orders').delete().eq('id', id);
+    // Remove do banco (itens primeiro por FK, depois o pedido).
+    // .select() devolve as linhas removidas — se vier vazio, o RLS bloqueou.
+    await supabase.from('order_items').delete().eq('order_id', id).select();
+    const { data: deletedRows, error } = await supabase
+      .from('orders').delete().eq('id', id).select();
 
-    // Remove do localStorage do cliente (last_order e histórico)
+    if (error) {
+      alert('Erro ao deletar pedido: ' + error.message);
+      return;
+    }
+    if (!deletedRows || deletedRows.length === 0) {
+      alert(
+        'O pedido NÃO foi deletado do banco (0 linhas removidas).\n\n' +
+        'Causa provável: falta uma política RLS de DELETE no Supabase.\n' +
+        'Rode o SQL que está no chat para liberar a exclusão.'
+      );
+      return;
+    }
+
+    // Deletou de verdade — atualiza UI e localStorage
+    deletedIds.current.add(id);
+    setOrders(prev => prev.filter(o => o.id !== id));
     if (localStorage.getItem('agoma_last_order_id') === id) {
       localStorage.removeItem('agoma_last_order_id');
     }
