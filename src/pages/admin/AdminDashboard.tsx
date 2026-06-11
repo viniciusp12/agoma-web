@@ -44,6 +44,18 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     fetchOrders();
+
+    // Realtime: atualiza automaticamente sem precisar dar F5
+    const channel = supabase
+      .channel('admin_orders_realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'orders' },
+        () => { fetchOrders(); }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
   async function fetchOrders() {

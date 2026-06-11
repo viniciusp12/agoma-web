@@ -48,6 +48,9 @@ export default function CartDrawer() {
         await supabase.from('order_items').insert(orderItems);
         // Guarda o ID para o cliente rastrear o status
         localStorage.setItem('agoma_last_order_id', order.id);
+        // Mantém histórico de IDs (últimos 20 pedidos)
+        const existingIds: string[] = JSON.parse(localStorage.getItem('agoma_order_ids') ?? '[]');
+        localStorage.setItem('agoma_order_ids', JSON.stringify([order.id, ...existingIds].slice(0, 20)));
       }
     } catch { /* silencioso */ }
   }

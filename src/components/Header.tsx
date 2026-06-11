@@ -7,8 +7,9 @@ export default function Header() {
   const { pathname } = useLocation();
 
   const navLinks = [
-    { to: '/',         label: 'Início' },
-    { to: '/cardapio', label: 'Cardápio' },
+    { to: '/',             label: 'Início'        },
+    { to: '/cardapio',     label: 'Cardápio'      },
+    { to: '/meus-pedidos', label: 'Meus Pedidos'  },
   ];
 
   return (

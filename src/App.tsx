@@ -13,6 +13,7 @@ import ProtectedRoute from './components/admin/ProtectedRoute';
 import Home from './pages/Home';
 import Cardapio from './pages/Cardapio';
 import Pedidos from './pages/Pedidos';
+import MeusPedidos from './pages/MeusPedidos';
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminCardapio from './pages/admin/AdminCardapio';
@@ -26,7 +27,8 @@ function PublicSite() {
           <Routes>
             <Route path="/"         element={<Home />} />
             <Route path="/cardapio" element={<Cardapio />} />
-            <Route path="/pedidos"  element={<Pedidos />} />
+            <Route path="/pedidos"       element={<Pedidos />} />
+            <Route path="/meus-pedidos" element={<MeusPedidos />} />
           </Routes>
         </main>
         <Footer />

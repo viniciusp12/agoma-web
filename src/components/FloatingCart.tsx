@@ -1,4 +1,5 @@
 import { ShoppingBag } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 
 function formatCurrency(value: number) {
@@ -7,8 +8,9 @@ function formatCurrency(value: number) {
 
 export default function FloatingCart() {
   const { totalItems, totalPrice, openCart, state } = useCart();
+  const { pathname } = useLocation();
 
-  if (totalItems === 0 || state.isCartOpen) return null;
+  if (totalItems === 0 || state.isCartOpen || pathname === '/pedidos' || pathname === '/meus-pedidos') return null;
 
   return (
     <button
