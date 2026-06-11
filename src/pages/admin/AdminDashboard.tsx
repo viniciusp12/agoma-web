@@ -88,9 +88,26 @@ export default function AdminDashboard() {
   async function confirmCancel(id: string) {
     const reason = cancelReason.trim();
     if (!reason) return;  // motivo é obrigatório
-    await supabase.from('orders')
+
+    // .select() confirma que a linha foi realmente atualizada no banco
+    const { data, error } = await supabase.from('orders')
       .update({ status: 'cancelled', cancel_reason: reason })
-      .eq('id', id);
+      .eq('id', id)
+      .select();
+
+    if (error) {
+      alert(
+        'Erro ao cancelar o pedido:\n' + error.message +
+        '\n\nSe a mensagem citar a coluna "cancel_reason", rode no Supabase:\n' +
+        'ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS cancel_reason text;'
+      );
+      return;
+    }
+    if (!data || data.length === 0) {
+      alert('O cancelamento não foi salvo (0 linhas alteradas). Verifique as permissões (RLS) de UPDATE.');
+      return;
+    }
+
     setOrders(prev => prev.map(o =>
       o.id === id ? { ...o, status: 'cancelled', cancel_reason: reason } : o
     ));
