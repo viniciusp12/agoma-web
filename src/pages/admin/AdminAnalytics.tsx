@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   TrendingUp, TrendingDown, Minus, BarChart3, Calendar,
-  MapPin, ShoppingBag, RefreshCw, DollarSign, Trophy, XCircle, Filter,
+  MapPin, ShoppingBag, RefreshCw, DollarSign, Trophy, XCircle, Filter, RotateCcw,
 } from 'lucide-react';
 import { supabase, type DBOrder } from '../../services/supabase';
 import AdminLayout from '../../components/admin/AdminLayout';
@@ -124,6 +124,11 @@ export default function AdminAnalytics() {
     else if (p === 'all') { setStartStr(''); setEndStr(''); }
     setPreset(p);
     setMonthSel('');
+  }
+
+  // Limpa o filtro e volta ao padrão (este mês)
+  function clearFilter() {
+    applyPreset('month');
   }
 
   function applyMonth(ym: string) {
@@ -323,6 +328,17 @@ export default function AdminAnalytics() {
                     className="text-xs outline-none text-gray-700 bg-transparent"
                   />
                 </div>
+
+                <span className="w-px h-6 bg-gray-200 mx-1" />
+
+                {/* Limpar filtro */}
+                <button
+                  onClick={clearFilter}
+                  className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:text-red-500 hover:border-red-300 hover:bg-red-50 transition-all"
+                  title="Limpar filtro (volta para Este mês)"
+                >
+                  <RotateCcw size={13} /> Limpar
+                </button>
               </div>
             </div>
 
