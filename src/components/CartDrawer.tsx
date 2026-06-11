@@ -41,6 +41,7 @@ export default function CartDrawer() {
             is_combo: ci.isCombo,
             combo_drink: ci.comboDrink ?? null,
             additionals: ci.additionals,
+            notes: ci.observations ?? null,
             subtotal: unit * ci.quantity,
           };
         });
@@ -134,6 +135,9 @@ export default function CartDrawer() {
                       {ci.meatPoint && <p>• {formatMeat(ci.meatPoint)}</p>}
                       {ci.isCombo && <p>• 🔥 Combo (Refri + Fritas){ci.comboDrink ? ` — ${ci.comboDrink}` : ''}</p>}
                       {ci.additionals.map((a) => <p key={a.id}>• + {a.name}</p>)}
+                      {ci.observations && (
+                        <p className="text-[#1A2E17] font-medium mt-1 italic">📝 {ci.observations}</p>
+                      )}
                     </div>
                     <div className="flex items-center justify-between mt-2">
                       {/* Qty */}

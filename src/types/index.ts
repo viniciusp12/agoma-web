@@ -37,6 +37,7 @@ export interface CartItem {
   additionals: CartItemAdditional[];
   isCombo: boolean;
   comboDrink?: string;      // bebida escolhida no combo
+  observations?: string;    // observações livres (ex: "sem cebola")
 }
 
 export interface Address {

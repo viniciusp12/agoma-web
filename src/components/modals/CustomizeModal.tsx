@@ -24,15 +24,16 @@ export default function CustomizeModal() {
     .filter(i => i.category === 'adicionais')
     .map(i => ({ id: i.id, name: i.name, price: i.price }));
 
-  const [qty, setQty]             = useState(1);
-  const [meatPoint, setMeat]      = useState<MeatPoint>('ao_ponto');
-  const [additionals, setAdd]     = useState<CartItemAdditional[]>([]);
-  const [isCombo, setCombo]       = useState(false);
+  const [qty, setQty]               = useState(1);
+  const [meatPoint, setMeat]        = useState<MeatPoint>('ao_ponto');
+  const [additionals, setAdd]       = useState<CartItemAdditional[]>([]);
+  const [isCombo, setCombo]         = useState(false);
   const [comboDrink, setComboDrink] = useState('');
+  const [observations, setObs]      = useState('');
 
   useEffect(() => {
     if (state.step === 'customize') {
-      setQty(1); setAdd([]); setCombo(false); setMeat('ao_ponto'); setComboDrink('');
+      setQty(1); setAdd([]); setCombo(false); setMeat('ao_ponto'); setComboDrink(''); setObs('');
       document.body.style.overflow = 'hidden';
     }
     return () => { document.body.style.overflow = ''; };
@@ -66,6 +67,7 @@ export default function CustomizeModal() {
       additionals,
       isCombo,
       comboDrink: isCombo ? comboDrink : undefined,
+      observations: observations.trim() || undefined,
     });
   }
 
@@ -289,6 +291,22 @@ export default function CustomizeModal() {
               </div>
             </div>
           )}
+
+          {/* ── Observações ── */}
+          <div>
+            <SectionTitle title="Observações" subtitle="Opcional" />
+            <textarea
+              value={observations}
+              onChange={(e) => setObs(e.target.value)}
+              maxLength={200}
+              rows={3}
+              placeholder="Ex: sem cebola, molho à parte, ponto bem passado..."
+              className="w-full resize-none rounded-xl border-2 border-gray-200 focus:border-[#1A2E17] outline-none px-3 py-2.5 text-sm text-gray-700 placeholder:text-gray-400 transition-colors"
+            />
+            {observations.length > 0 && (
+              <p className="text-[0.65rem] text-gray-400 text-right mt-1">{observations.length}/200</p>
+            )}
+          </div>
         </div>
 
         {/* ── Footer: qty + add btn ── */}
