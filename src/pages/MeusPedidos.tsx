@@ -49,7 +49,7 @@ export default function MeusPedidos() {
     // Carga inicial
     loadOrders(false);
 
-    // Realtime — atualiza status ao vivo quando o admin muda
+    // Realtime — atualiza status (UPDATE) e remove (DELETE) ao vivo
     const channel = supabase
       .channel('meus_pedidos_realtime')
       .on(
@@ -61,6 +61,16 @@ export default function MeusPedidos() {
             setOrders(prev => prev.map(o =>
               o.id === updated.id ? { ...o, ...updated } : o
             ));
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'orders' },
+        (payload) => {
+          const deletedId = (payload.old as { id?: string })?.id;
+          if (deletedId) {
+            setOrders(prev => prev.filter(o => o.id !== deletedId));
           }
         }
       )

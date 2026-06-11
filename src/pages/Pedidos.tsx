@@ -31,6 +31,7 @@ export default function Pedidos() {
 
   const [orderStatus, setOrderStatus] = useState<string>('pending');
   const [cancelled, setCancelled]     = useState(false);
+  const [removed, setRemoved]         = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -44,19 +45,26 @@ export default function Pedidos() {
     }
 
     function pollStatus() {
-      supabase.from('orders').select('status').eq('id', orderId!).single()
-        .then(({ data }) => { if (data?.status) applyStatus(data.status); });
+      supabase.from('orders').select('status').eq('id', orderId!).maybeSingle()
+        .then(({ data }) => {
+          if (data === null) setRemoved(true);          // pedido foi deletado
+          else if (data.status) applyStatus(data.status);
+        });
     }
 
     // Busca status inicial
     pollStatus();
 
-    // Realtime — atualiza instantaneamente quando o admin muda o status
+    // Realtime — atualiza instantaneamente quando o admin muda o status ou deleta
     const channel = supabase
       .channel(`order_track_${orderId}`)
       .on('postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${orderId}` },
         ({ new: row }) => { if (row.status) applyStatus(row.status as string); }
+      )
+      .on('postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'orders', filter: `id=eq.${orderId}` },
+        () => setRemoved(true)
       )
       .subscribe();
 
@@ -95,7 +103,15 @@ export default function Pedidos() {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 px-6 py-5 mb-6">
           <h2 className="font-bold text-[#1A1A1A] mb-5 text-sm">Status do Pedido</h2>
 
-          {cancelled ? (
+          {removed ? (
+            <div className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
+              <span className="text-2xl">🗑️</span>
+              <div>
+                <p className="font-bold text-gray-700 text-sm">Pedido removido</p>
+                <p className="text-xs text-gray-500">Este pedido não está mais disponível.</p>
+              </div>
+            </div>
+          ) : cancelled ? (
             <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
               <span className="text-2xl">❌</span>
               <div>
