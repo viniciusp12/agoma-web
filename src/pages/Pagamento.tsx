@@ -72,7 +72,9 @@ const STATUS_CONFIG: Record<MPPaymentStatus, { label: string; color: string; ico
 
 // ── Componente principal ───────────────────────────────────────────────────
 export default function Pagamento() {
-  const { items, total } = useCart();
+  const { state, totalPrice } = useCart();
+  const items = state.items;   // itens do carrinho
+  const total = totalPrice;    // total calculado (itens + adicionais + combo)
   const navigate = useNavigate();
 
   const [method, setMethod] = useState<PaymentMethod>('pix');
