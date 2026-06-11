@@ -12,6 +12,7 @@ import ScrollToTop from './components/ScrollToTop';
 import ProtectedRoute from './components/admin/ProtectedRoute';
 import Home from './pages/Home';
 import Cardapio from './pages/Cardapio';
+import Pedidos from './pages/Pedidos';
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminCardapio from './pages/admin/AdminCardapio';
@@ -25,6 +26,7 @@ function PublicSite() {
           <Routes>
             <Route path="/"         element={<Home />} />
             <Route path="/cardapio" element={<Cardapio />} />
+            <Route path="/pedidos"  element={<Pedidos />} />
           </Routes>
         </main>
         <Footer />
@@ -44,12 +46,12 @@ export default function App() {
       <ScrollToTop />
       <AuthProvider>
         <Routes>
-          {/* ── Admin ── */}
+          {/* --- Admin --- */}
           <Route path="/admin/login"    element={<AdminLogin />} />
           <Route path="/admin"          element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
           <Route path="/admin/cardapio" element={<ProtectedRoute><AdminCardapio /></ProtectedRoute>} />
 
-          {/* ── Site público ── */}
+          {/* --- Site público --- */}
           <Route path="/*" element={<PublicSite />} />
         </Routes>
       </AuthProvider>
