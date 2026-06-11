@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import {
   CreditCard,
   QrCode,
-  Banknote,
   CheckCircle2,
   XCircle,
   Clock,
@@ -11,10 +10,10 @@ import {
   Loader2,
   ShoppingBag,
 } from 'lucide-react';
-import { useCart } from '../context/CartContext';
+import { supabase } from '../services/supabase';
 
 // ── Tipos ──────────────────────────────────────────────────────────────────
-type PaymentMethod = 'credit_card' | 'pix' | 'boleto';
+type PaymentMethod = 'credit_card' | 'pix';
 
 type MPPaymentStatus =
   | 'pending'
@@ -46,11 +45,7 @@ interface MPPaymentResponse {
     transaction_data?: {
       qr_code?: string;
       qr_code_base64?: string;
-      ticket_url?: string;
     };
-  };
-  barcode?: {
-    content?: string;
   };
 }
 
@@ -59,40 +54,53 @@ function formatCurrency(value: number) {
 }
 
 const STATUS_CONFIG: Record<MPPaymentStatus, { label: string; color: string; icon: React.ElementType }> = {
-  pending:       { label: 'Pendente',         color: 'text-[#C4A044]',  icon: Clock },
-  approved:      { label: 'Aprovado',         color: 'text-green-600',  icon: CheckCircle2 },
-  authorized:    { label: 'Autorizado',       color: 'text-green-600',  icon: CheckCircle2 },
-  in_process:    { label: 'Processando',      color: 'text-[#C4A044]',  icon: Loader2 },
-  in_mediation:  { label: 'Em mediação',      color: 'text-orange-500', icon: Clock },
-  rejected:      { label: 'Rejeitado',        color: 'text-red-600',    icon: XCircle },
-  cancelled:     { label: 'Cancelado',        color: 'text-red-600',    icon: XCircle },
-  refunded:      { label: 'Estornado',        color: 'text-gray-500',   icon: ArrowLeft },
-  charged_back:  { label: 'Chargeback',       color: 'text-red-700',    icon: XCircle },
+  pending: { label: 'Pendente', color: 'text-[#C4A044]', icon: Clock },
+  approved: { label: 'Aprovado', color: 'text-green-600', icon: CheckCircle2 },
+  authorized: { label: 'Autorizado', color: 'text-green-600', icon: CheckCircle2 },
+  in_process: { label: 'Processando', color: 'text-[#C4A044]', icon: Loader2 },
+  in_mediation: { label: 'Em mediação', color: 'text-orange-500', icon: Clock },
+  rejected: { label: 'Rejeitado', color: 'text-red-600', icon: XCircle },
+  cancelled: { label: 'Cancelado', color: 'text-red-600', icon: XCircle },
+  refunded: { label: 'Estornado', color: 'text-gray-500', icon: ArrowLeft },
+  charged_back: { label: 'Chargeback', color: 'text-red-700', icon: XCircle },
 };
 
 // ── Componente principal ───────────────────────────────────────────────────
 export default function Pagamento() {
-  const { state, totalPrice } = useCart();
-  const items = state.items;   // itens do carrinho
-  const total = totalPrice;    // total calculado (itens + adicionais + combo)
   const navigate = useNavigate();
-
   const [method, setMethod] = useState<PaymentMethod>('pix');
   const [loading, setLoading] = useState(false);
-  const [error, setError]   = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  // Snapshot do checkout (vindo do CartDrawer)
+  const [checkoutData, setCheckoutData] = useState<any>(null);
 
   // Dados do cartão
-  const [cardNumber, setCardNumber]   = useState('');
-  const [cardName, setCardName]       = useState('');
-  const [cardExpiry, setCardExpiry]   = useState('');
-  const [cardCvv, setCardCvv]         = useState('');
-  const [payerEmail, setPayerEmail]   = useState('');
-  const [payerCpf, setPayerCpf]       = useState('');
+  const [cardNumber, setCardNumber] = useState('');
+  const [cardName, setCardName] = useState('');
+  const [cardExpiry, setCardExpiry] = useState('');
+  const [cardCvv, setCardCvv] = useState('');
+  const [payerEmail, setPayerEmail] = useState('');
+  const [payerCpf, setPayerCpf] = useState('');
 
   // Resposta do Mercado Pago
-  const [payment, setPayment]         = useState<MPPaymentResponse | null>(null);
-  const [paymentId, setPaymentId]     = useState<string | null>(null);
-  const [statusData, setStatusData]   = useState<MPPaymentResponse | null>(null);
+  const [payment, setPayment] = useState<MPPaymentResponse | null>(null);
+  const [paymentId, setPaymentId] = useState<string | null>(null);
+  const [statusData, setStatusData] = useState<MPPaymentResponse | null>(null);
+
+  // Carrega snapshot
+  useEffect(() => {
+    const raw = localStorage.getItem('agoma_checkout_snapshot');
+    if (raw) {
+      try {
+        setCheckoutData(JSON.parse(raw));
+      } catch {
+        navigate('/');
+      }
+    } else {
+      navigate('/');
+    }
+  }, [navigate]);
 
   // Polling de status
   useEffect(() => {
@@ -104,14 +112,13 @@ export default function Pagamento() {
   // ── Consulta status pelo ID ──────────────────────────────────────────────
   async function fetchPaymentStatus(id: string) {
     try {
-      // Produção: substitua pela sua rota de backend que faz proxy para
-      // GET https://api.mercadopago.com/v1/payments/{id}
-      // com o header Authorization: Bearer <ACCESS_TOKEN>
       const res = await fetch(`/api/mercadopago/payments/${id}`);
       if (!res.ok) return;
       const data: MPPaymentResponse = await res.json();
       setStatusData(data);
-      if (data.status === 'approved' || data.status === 'authorized') {
+      // Se aprovado, cria o pedido e redireciona
+      if ((data.status === 'approved' || data.status === 'authorized') && checkoutData) {
+        await saveOrder();
         clearInterval(undefined);
       }
     } catch {
@@ -119,47 +126,87 @@ export default function Pagamento() {
     }
   }
 
+  // ── Salva pedido no Supabase após aprovação ────────────────────────────
+  async function saveOrder() {
+    if (!checkoutData) return;
+    try {
+      const { data: order } = await supabase
+        .from('orders')
+        .insert([{
+          total: checkoutData.total,
+          address: checkoutData.address,
+          status: 'pending',
+          customer_name: checkoutData.customerName?.trim() || null,
+        }])
+        .select()
+        .single();
+      if (order) {
+        const orderItems = checkoutData.items.map((ci: any) => {
+          let extrasTotal = 0;
+          if (ci.extras && ci.extras.length > 0) {
+            extrasTotal = ci.extras.reduce((sum: number, ex: any) => sum + (ex.price ?? 0), 0);
+          }
+          const itemTotal = (ci.item.price + extrasTotal) * ci.quantity;
+          return {
+            order_id: order.id,
+            item_id: ci.item.id,
+            quantity: ci.quantity,
+            unit_price: ci.item.price,
+            total_price: itemTotal,
+            meat_point: ci.meat ?? null,
+            extras: ci.extras || [],
+          };
+        });
+        await supabase.from('order_items').insert(orderItems);
+        localStorage.setItem('agoma_last_order_id', order.id);
+        localStorage.setItem(
+          'agoma_last_order_snapshot',
+          JSON.stringify({ items: checkoutData.items, address: checkoutData.address, total: checkoutData.total }),
+        );
+        localStorage.removeItem('agoma_checkout_snapshot');
+        navigate('/pedidos');
+      }
+    } catch (err) {
+      console.error('Erro ao salvar pedido:', err);
+    }
+  }
+
   // ── Cria pagamento ───────────────────────────────────────────────────────
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!checkoutData) return;
     setLoading(true);
     setError(null);
 
     const body: Record<string, unknown> = {
-      transaction_amount: total,
-      description: `Pedido Agomá — ${items.length} item(s)`,
-      payment_method_id: method === 'pix' ? 'pix' : method === 'boleto' ? 'bolbradesco' : 'visa',
+      transaction_amount: checkoutData.total,
+      description: `Pedido Agomá — ${checkoutData.items.length} item(s)`,
+      payment_method_id: method === 'pix' ? 'pix' : 'visa',
       payer: {
         email: payerEmail,
         first_name: cardName.split(' ')[0] || 'Cliente',
-        last_name:  cardName.split(' ').slice(1).join(' ') || 'Agomá',
+        last_name: cardName.split(' ').slice(1).join(' ') || 'Agomá',
         identification: { type: 'CPF', number: payerCpf.replace(/\D/g, '') },
       },
     };
 
     if (method === 'credit_card') {
       // Em produção, use MercadoPago.js para tokenizar o cartão
-      // e envie o token ao seu backend em vez dos dados brutos.
-      body.token          = '__CARD_TOKEN__'; // substitua pelo token gerado via SDK
-      body.installments   = 1;
-      body.issuer_id      = undefined;
+      body.token = '__CARD_TOKEN__';
+      body.installments = 1;
+      body.issuer_id = undefined;
     }
 
     try {
-      // Rota de backend que faz proxy para
-      // POST https://api.mercadopago.com/v1/payments
       const res = await fetch('/api/mercadopago/payments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
-
       const data: MPPaymentResponse = await res.json();
-
       if (!res.ok) {
         throw new Error(data?.status_detail ?? 'Erro ao processar pagamento');
       }
-
       setPayment(data);
       setPaymentId(String(data.id));
       setStatusData(data);
@@ -187,11 +234,12 @@ export default function Pagamento() {
   const currentStatus = statusData ?? payment;
   const statusCfg = currentStatus ? STATUS_CONFIG[currentStatus.status] : null;
 
+  if (!checkoutData) return null;
+
   // ── Render ───────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-[#FAF7F2] py-10 px-4">
       <div className="max-w-xl mx-auto">
-
         {/* Header */}
         <div className="flex items-center gap-3 mb-8">
           <button
@@ -218,7 +266,7 @@ export default function Pagamento() {
             <ShoppingBag size={16} className="text-[#1A2E17]" />
             <span className="font-bold text-sm text-[#1A1A1A]">Resumo do pedido</span>
           </div>
-          {items.map((ci) => (
+          {checkoutData.items.map((ci: any) => (
             <div key={ci.cartId} className="flex justify-between text-sm text-gray-600 mb-1">
               <span>{ci.item.name} <span className="text-gray-400">×{ci.quantity}</span></span>
               <span>{formatCurrency(ci.item.price * ci.quantity)}</span>
@@ -226,7 +274,7 @@ export default function Pagamento() {
           ))}
           <div className="border-t border-gray-100 mt-3 pt-3 flex justify-between items-center">
             <span className="font-bold text-[#1A1A1A]">Total</span>
-            <span className="text-xl font-black text-[#1A2E17]">{formatCurrency(total)}</span>
+            <span className="text-xl font-black text-[#1A2E17]">{formatCurrency(checkoutData.total)}</span>
           </div>
         </div>
 
@@ -265,44 +313,18 @@ export default function Pagamento() {
                 )}
               </div>
             )}
-
-            {/* Boleto link */}
-            {method === 'boleto' && currentStatus.point_of_interaction?.transaction_data?.ticket_url && (
-              <a
-                href={currentStatus.point_of_interaction.transaction_data.ticket_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-4 flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-[#1A2E17] text-white text-sm font-bold hover:bg-[#243d20] transition-all"
-              >
-                <Banknote size={16} />
-                Abrir boleto
-              </a>
-            )}
-
-            {/* Botão voltar ao início após aprovação */}
-            {(currentStatus.status === 'approved' || currentStatus.status === 'authorized') && (
-              <button
-                onClick={() => navigate('/')}
-                className="mt-4 w-full py-2.5 rounded-xl bg-[#1A2E17] text-white text-sm font-bold hover:bg-[#243d20] transition-all flex items-center justify-center gap-2"
-              >
-                <CheckCircle2 size={16} />
-                Voltar ao início
-              </button>
-            )}
           </div>
         )}
 
         {/* Formulário de pagamento (exibido antes de criar o pagamento) */}
         {!payment && (
           <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 py-6">
-
             {/* Seleção de método */}
             <p className="font-bold text-sm text-[#1A1A1A] mb-4">Método de pagamento</p>
-            <div className="grid grid-cols-3 gap-3 mb-6">
+            <div className="grid grid-cols-2 gap-3 mb-6">
               {([
-                { id: 'pix',         label: 'PIX',        icon: QrCode },
-                { id: 'credit_card', label: 'Cartão',     icon: CreditCard },
-                { id: 'boleto',      label: 'Boleto',     icon: Banknote },
+                { id: 'credit_card', label: 'Cartão', icon: CreditCard },
+                { id: 'pix', label: 'PIX', icon: QrCode },
               ] as const).map(({ id, label, icon: Icon }) => (
                 <button
                   key={id}
@@ -418,10 +440,9 @@ export default function Pagamento() {
               {loading ? (
                 <><Loader2 size={18} className="animate-spin" /> Processando...</>
               ) : (
-                <><CreditCard size={18} /> Pagar {formatCurrency(total)}</>
+                <><CreditCard size={18} /> Pagar {formatCurrency(checkoutData.total)}</>
               )}
             </button>
-
             <p className="text-center text-xs text-gray-400 mt-3">
               Seus dados são protegidos pelo Mercado Pago 🔒
             </p>
