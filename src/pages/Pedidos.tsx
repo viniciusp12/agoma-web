@@ -61,6 +61,10 @@ export default function Pedidos() {
     const orderId = localStorage.getItem('agoma_last_order_id');
     if (!orderId) return;
 
+    // Só consideramos "removido" depois de termos visto o pedido existir.
+    // Um null logo de cara costuma ser lag de replicação (pedido recém-criado).
+    let seen = false;
+
     function applyStatus(status: string, reason?: string | null) {
       if (status === 'cancelled') {
         setCancelled(true);
@@ -71,8 +75,14 @@ export default function Pedidos() {
     function pollStatus() {
       supabase.from('orders').select('status, cancel_reason').eq('id', orderId!).maybeSingle()
         .then(({ data }) => {
-          if (data === null) setRemoved(true);          // pedido foi deletado
-          else if (data.status) applyStatus(data.status, data.cancel_reason);
+          if (data) {
+            seen = true;
+            setRemoved(false);
+            if (data.status) applyStatus(data.status, data.cancel_reason);
+          } else if (seen) {
+            setRemoved(true);   // existia e sumiu → foi deletado de fato
+          }
+          // data null e nunca visto → ignora (lag/replicação)
         });
     }
 
