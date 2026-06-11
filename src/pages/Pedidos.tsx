@@ -53,6 +53,10 @@ export default function Pedidos() {
   useEffect(() => {
     window.scrollTo(0, 0);
 
+    // Garante que o carrinho fique vazio ao chegar nesta tela (a sacola some).
+    // O resumo abaixo vem do snapshot, não do carrinho.
+    clearCart();
+
     const orderId = localStorage.getItem('agoma_last_order_id');
     if (!orderId) return;
 
