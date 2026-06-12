@@ -203,7 +203,16 @@ export default function Pagamento() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
-      const data: MPPaymentResponse = await res.json();
+        const text = await res.text();
+          if (!text || text.trim() === '') {
+                  throw new Error('O servidor não retornou resposta. Verifique a configuração da API do Mercado Pago.');
+                }
+          let data: MPPaymentResponse;
+          try {
+                  data = JSON.parse(text);
+                } catch {
+                  throw new Error(`Resposta inválida do servidor: ${text.slice(0, 150)}`);
+                }
       if (!res.ok) {
         throw new Error(data?.status_detail ?? 'Erro ao processar pagamento');
       }
