@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   CreditCard,
   QrCode,
@@ -9,12 +9,11 @@ import {
   ArrowLeft,
   Loader2,
   ShoppingBag,
-} from 'lucide-react';
-import { supabase } from '../services/supabase';
+} from 'lucide-react'
+import { supabase } from '../services/supabase'
+import { getMercadoPago, parseExpiry } from '../lib/mercadoPago'
 
-// ── Tipos ──────────────────────────────────────────────────────────────────
-type PaymentMethod = 'credit_card' | 'pix';
-
+type PaymentMethod = 'credit_card' | 'pix'
 type MPPaymentStatus =
   | 'pending'
   | 'approved'
@@ -24,33 +23,33 @@ type MPPaymentStatus =
   | 'rejected'
   | 'cancelled'
   | 'refunded'
-  | 'charged_back';
+  | 'charged_back'
 
 interface MPPaymentResponse {
-  id: number;
-  status: MPPaymentStatus;
-  status_detail: string;
-  transaction_amount: number;
-  description: string;
-  payment_method_id: string;
-  payment_type_id: string;
-  date_created: string;
-  date_approved: string | null;
+  id: number
+  status: MPPaymentStatus
+  status_detail: string
+  transaction_amount: number
+  description: string
+  payment_method_id: string
+  payment_type_id: string
+  date_created: string
+  date_approved: string | null
   payer: {
-    email: string;
-    first_name?: string;
-    last_name?: string;
-  };
+    email: string
+    first_name?: string
+    last_name?: string
+  }
   point_of_interaction?: {
     transaction_data?: {
-      qr_code?: string;
-      qr_code_base64?: string;
-    };
-  };
+      qr_code?: string
+      qr_code_base64?: string
+    }
+  }
 }
 
 function formatCurrency(value: number) {
-  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
 const STATUS_CONFIG: Record<MPPaymentStatus, { label: string; color: string; icon: React.ElementType }> = {
@@ -63,193 +62,253 @@ const STATUS_CONFIG: Record<MPPaymentStatus, { label: string; color: string; ico
   cancelled: { label: 'Cancelado', color: 'text-red-600', icon: XCircle },
   refunded: { label: 'Estornado', color: 'text-gray-500', icon: ArrowLeft },
   charged_back: { label: 'Chargeback', color: 'text-red-700', icon: XCircle },
-};
+}
 
-// ── Componente principal ───────────────────────────────────────────────────
 export default function Pagamento() {
-  const navigate = useNavigate();
-  const [method, setMethod] = useState<PaymentMethod>('pix');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate()
+  const pollingRef = useRef<number | null>(null)
 
-  // Snapshot do checkout (vindo do CartDrawer)
-  const [checkoutData, setCheckoutData] = useState<any>(null);
+  const [method, setMethod] = useState<PaymentMethod>('pix')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [checkoutData, setCheckoutData] = useState<any>(null)
 
-  // Dados do cartão
-  const [cardNumber, setCardNumber] = useState('');
-  const [cardName, setCardName] = useState('');
-  const [cardExpiry, setCardExpiry] = useState('');
-  const [cardCvv, setCardCvv] = useState('');
-  const [payerEmail, setPayerEmail] = useState('');
-  const [payerCpf, setPayerCpf] = useState('');
+  const [cardNumber, setCardNumber] = useState('')
+  const [cardName, setCardName] = useState('')
+  const [cardExpiry, setCardExpiry] = useState('')
+  const [cardCvv, setCardCvv] = useState('')
+  const [payerEmail, setPayerEmail] = useState('')
+  const [payerCpf, setPayerCpf] = useState('')
 
-  // Resposta do Mercado Pago
-  const [payment, setPayment] = useState<MPPaymentResponse | null>(null);
-  const [paymentId, setPaymentId] = useState<string | null>(null);
-  const [statusData, setStatusData] = useState<MPPaymentResponse | null>(null);
+  const [payment, setPayment] = useState<MPPaymentResponse | null>(null)
+  const [paymentId, setPaymentId] = useState<string | null>(null)
+  const [statusData, setStatusData] = useState<MPPaymentResponse | null>(null)
 
-  // Carrega snapshot
   useEffect(() => {
-    const raw = localStorage.getItem('agoma_checkout_snapshot');
+    const raw = localStorage.getItem('agoma_checkout_snapshot')
     if (raw) {
       try {
-        setCheckoutData(JSON.parse(raw));
+        setCheckoutData(JSON.parse(raw))
       } catch {
-        navigate('/');
+        navigate('/')
       }
     } else {
-      navigate('/');
+      navigate('/')
     }
-  }, [navigate]);
+  }, [navigate])
 
-  // Polling de status
   useEffect(() => {
-    if (!paymentId) return;
-    const interval = setInterval(() => fetchPaymentStatus(paymentId), 5_000);
-    return () => clearInterval(interval);
-  }, [paymentId]);
+    if (!paymentId) return
 
-  // ── Consulta status pelo ID ──────────────────────────────────────────────
+    pollingRef.current = window.setInterval(() => {
+      fetchPaymentStatus(paymentId)
+    }, 5000)
+
+    return () => {
+      if (pollingRef.current) {
+        window.clearInterval(pollingRef.current)
+        pollingRef.current = null
+      }
+    }
+  }, [paymentId])
+
   async function fetchPaymentStatus(id: string) {
     try {
-      const res = await fetch(`/api/mercadopago/payments/${id}`);
-      if (!res.ok) return;
-      const data: MPPaymentResponse = await res.json();
-      setStatusData(data);
-      // Se aprovado, cria o pedido e redireciona
+      const res = await fetch(`/api/mercadopago/payments/${id}`)
+      if (!res.ok) return
+      const data: MPPaymentResponse = await res.json()
+      setStatusData(data)
+
       if ((data.status === 'approved' || data.status === 'authorized') && checkoutData) {
-        await saveOrder();
-        clearInterval(undefined);
+        if (pollingRef.current) {
+          window.clearInterval(pollingRef.current)
+          pollingRef.current = null
+        }
+        await saveOrder()
       }
-    } catch {
-      // silencia erros de polling
-    }
+    } catch {}
   }
 
-  // ── Salva pedido no Supabase após aprovação ────────────────────────────
   async function saveOrder() {
-    if (!checkoutData) return;
+    if (!checkoutData) return
+
     try {
       const { data: order } = await supabase
         .from('orders')
-        .insert([{
-          total: checkoutData.total,
-          address: checkoutData.address,
-          status: 'pending',
-          customer_name: checkoutData.customerName?.trim() || null,
-        }])
+        .insert([
+          {
+            total: checkoutData.total,
+            address: checkoutData.address,
+            status: 'pending',
+            customer_name: checkoutData.customerName?.trim() || null,
+          },
+        ])
         .select()
-        .single();
+        .single()
+
       if (order) {
         const orderItems = checkoutData.items.map((ci: any) => {
-          let extrasTotal = 0;
-          if (ci.extras && ci.extras.length > 0) {
-            extrasTotal = ci.extras.reduce((sum: number, ex: any) => sum + (ex.price ?? 0), 0);
-          }
-          const itemTotal = (ci.item.price + extrasTotal) * ci.quantity;
+          const extrasTotal =
+            ci.extras?.reduce((sum: number, ex: any) => sum + (ex.price ?? 0), 0) ?? 0
+
           return {
             order_id: order.id,
             item_id: ci.item.id,
             quantity: ci.quantity,
             unit_price: ci.item.price,
-            total_price: itemTotal,
+            total_price: (ci.item.price + extrasTotal) * ci.quantity,
             meat_point: ci.meat ?? null,
             extras: ci.extras || [],
-          };
-        });
-        await supabase.from('order_items').insert(orderItems);
-        localStorage.setItem('agoma_last_order_id', order.id);
+          }
+        })
+
+        await supabase.from('order_items').insert(orderItems)
+
+        localStorage.setItem('agoma_last_order_id', order.id)
         localStorage.setItem(
           'agoma_last_order_snapshot',
-          JSON.stringify({ items: checkoutData.items, address: checkoutData.address, total: checkoutData.total }),
-        );
-        localStorage.removeItem('agoma_checkout_snapshot');
-        navigate('/pedidos');
+          JSON.stringify({
+            items: checkoutData.items,
+            address: checkoutData.address,
+            total: checkoutData.total,
+          }),
+        )
+        localStorage.removeItem('agoma_checkout_snapshot')
+        navigate('/pedidos')
       }
     } catch (err) {
-      console.error('Erro ao salvar pedido:', err);
+      console.error('Erro ao salvar pedido:', err)
     }
   }
 
-  // ── Cria pagamento ───────────────────────────────────────────────────────
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!checkoutData) return;
-    setLoading(true);
-    setError(null);
+  async function createCardToken() {
+    const publicKey = import.meta.env.VITE_MP_PUBLIC_KEY
+    if (!publicKey) throw new Error('VITE_MP_PUBLIC_KEY não configurada no frontend.')
 
-    const body: Record<string, unknown> = {
-      transaction_amount: checkoutData.total,
-      description: `Pedido Agomá — ${checkoutData.items.length} item(s)`,
-      payment_method_id: method === 'pix' ? 'pix' : 'visa',
-      payer: {
-        email: payerEmail,
-        first_name: cardName.split(' ')[0] || 'Cliente',
-        last_name: cardName.split(' ').slice(1).join(' ') || 'Agomá',
-        identification: { type: 'CPF', number: payerCpf.replace(/\D/g, '') },
-      },
-    };
+    const cleanedCardNumber = cardNumber.replace(/\s/g, '')
+    const cleanedCpf = payerCpf.replace(/\D/g, '')
+    const cleanedCvv = cardCvv.replace(/\D/g, '')
+    const { expirationMonth, expirationYear } = parseExpiry(cardExpiry)
 
-    if (method === 'credit_card') {
-      // Em produção, use MercadoPago.js para tokenizar o cartão
-      body.token = '__CARD_TOKEN__';
-      body.installments = 1;
-      body.issuer_id = undefined;
+    if (cleanedCardNumber.length < 13) throw new Error('Número do cartão inválido.')
+    if (!cardName.trim()) throw new Error('Informe o nome impresso no cartão.')
+    if (expirationMonth.length !== 2 || expirationYear.length !== 4) {
+      throw new Error('Validade do cartão inválida.')
     }
+    if (cleanedCvv.length < 3) throw new Error('CVV inválido.')
+    if (cleanedCpf.length !== 11) throw new Error('CPF do pagador inválido.')
+
+    const mp = await getMercadoPago(publicKey)
+    const tokenResponse = await mp.createCardToken({
+      cardNumber: cleanedCardNumber,
+      cardholderName: cardName.trim(),
+      identificationType: 'CPF',
+      identificationNumber: cleanedCpf,
+      securityCode: cleanedCvv,
+      cardExpirationMonth: expirationMonth,
+      cardExpirationYear: expirationYear,
+    })
+
+    if (!tokenResponse?.id) throw new Error('Não foi possível tokenizar o cartão.')
+    return tokenResponse.id as string
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!checkoutData) return
+
+    setLoading(true)
+    setError(null)
 
     try {
+      let cardToken: string | undefined
+
+      if (method === 'credit_card') {
+        cardToken = await createCardToken()
+      }
+
+      const firstName = cardName.trim().split(' ')[0] || 'Cliente'
+      const lastName = cardName.trim().split(' ').slice(1).join(' ') || 'Agomá'
+
+      const body: Record<string, unknown> = {
+        transaction_amount: Number(checkoutData.total),
+        description: `Pedido Agomá — ${checkoutData.items.length} item(s)`,
+        payment_method_id: method === 'pix' ? 'pix' : 'visa',
+        payer: {
+          email: payerEmail,
+          first_name: firstName,
+          last_name: lastName,
+          identification: {
+            type: 'CPF',
+            number: payerCpf.replace(/\D/g, ''),
+          },
+        },
+      }
+
+      if (method === 'credit_card') {
+        body.token = cardToken
+        body.installments = 1
+      }
+
       const res = await fetch('/api/mercadopago/payments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
-      });
-        const text = await res.text();
-          if (!text || text.trim() === '') {
-                  throw new Error('O servidor não retornou resposta. Verifique a configuração da API do Mercado Pago.');
-                }
-          let data: MPPaymentResponse;
-          try {
-                  data = JSON.parse(text);
-                } catch {
-                  throw new Error(`Resposta inválida do servidor: ${text.slice(0, 150)}`);
-                }
-      if (!res.ok) {
-        throw new Error(data?.status_detail ?? 'Erro ao processar pagamento');
+      })
+
+      const text = await res.text()
+      if (!text || text.trim() === '') {
+        throw new Error('O servidor não retornou resposta.')
       }
-      setPayment(data);
-      setPaymentId(String(data.id));
-      setStatusData(data);
+
+      let data: MPPaymentResponse
+      try {
+        data = JSON.parse(text)
+      } catch {
+        throw new Error(`Resposta inválida do servidor: ${text.slice(0, 150)}`)
+      }
+
+      if (!res.ok) throw new Error(data?.status_detail ?? 'Erro ao processar pagamento')
+
+      setPayment(data)
+      setPaymentId(String(data.id))
+      setStatusData(data)
+
+      if (data.status === 'approved' || data.status === 'authorized') {
+        await saveOrder()
+      }
     } catch (err: unknown) {
-      setError((err as Error).message ?? 'Erro desconhecido');
+      setError((err as Error).message ?? 'Erro desconhecido')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
   }
 
-  // ── Helpers de formatação ────────────────────────────────────────────────
   function fmtCard(v: string) {
-    return v.replace(/\D/g, '').slice(0, 16).replace(/(\d{4})/g, '$1 ').trim();
+    return v.replace(/\D/g, '').slice(0, 16).replace(/(\d{4})/g, '$1 ').trim()
   }
+
   function fmtExpiry(v: string) {
-    return v.replace(/\D/g, '').slice(0, 4).replace(/(\d{2})(\d)/, '$1/$2');
+    return v.replace(/\D/g, '').slice(0, 4).replace(/(\d{2})(\d)/, '$1/$2')
   }
+
   function fmtCpf(v: string) {
-    return v.replace(/\D/g, '').slice(0, 11)
+    return v
+      .replace(/\D/g, '')
+      .slice(0, 11)
       .replace(/(\d{3})(\d)/, '$1.$2')
       .replace(/(\d{3})(\d)/, '$1.$2')
-      .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+      .replace(/(\d{3})(\d{1,2})$/, '$1-$2')
   }
 
-  const currentStatus = statusData ?? payment;
-  const statusCfg = currentStatus ? STATUS_CONFIG[currentStatus.status] : null;
+  const currentStatus = statusData ?? payment
+  const statusCfg = currentStatus ? STATUS_CONFIG[currentStatus.status] : null
 
-  if (!checkoutData) return null;
+  if (!checkoutData) return null
 
-  // ── Render ───────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-[#FAF7F2] py-10 px-4">
       <div className="max-w-xl mx-auto">
-        {/* Header */}
         <div className="flex items-center gap-3 mb-8">
           <button
             onClick={() => navigate(-1)}
@@ -269,30 +328,37 @@ export default function Pagamento() {
           </div>
         </div>
 
-        {/* Resumo */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 py-4 mb-6">
           <div className="flex items-center gap-2 mb-3">
             <ShoppingBag size={16} className="text-[#1A2E17]" />
             <span className="font-bold text-sm text-[#1A1A1A]">Resumo do pedido</span>
           </div>
+
           {checkoutData.items.map((ci: any) => (
             <div key={ci.cartId} className="flex justify-between text-sm text-gray-600 mb-1">
-              <span>{ci.item.name} <span className="text-gray-400">×{ci.quantity}</span></span>
+              <span>
+                {ci.item.name} <span className="text-gray-400">×{ci.quantity}</span>
+              </span>
               <span>{formatCurrency(ci.item.price * ci.quantity)}</span>
             </div>
           ))}
+
           <div className="border-t border-gray-100 mt-3 pt-3 flex justify-between items-center">
             <span className="font-bold text-[#1A1A1A]">Total</span>
-            <span className="text-xl font-black text-[#1A2E17]">{formatCurrency(checkoutData.total)}</span>
+            <span className="text-xl font-black text-[#1A2E17]">
+              {formatCurrency(checkoutData.total)}
+            </span>
           </div>
         </div>
 
-        {/* Status do pagamento (após criação) */}
         {currentStatus && statusCfg && (
-          <div className={`bg-white rounded-2xl border shadow-sm px-6 py-5 mb-6 ${
-            currentStatus.status === 'approved' || currentStatus.status === 'authorized'
-              ? 'border-green-200' : 'border-gray-100'
-          }`}>
+          <div
+            className={`bg-white rounded-2xl border shadow-sm px-6 py-5 mb-6 ${
+              currentStatus.status === 'approved' || currentStatus.status === 'authorized'
+                ? 'border-green-200'
+                : 'border-gray-100'
+            }`}
+          >
             <div className="flex items-center gap-3 mb-3">
               <statusCfg.icon size={22} className={statusCfg.color} />
               <div>
@@ -301,7 +367,6 @@ export default function Pagamento() {
               </div>
             </div>
 
-            {/* PIX QR Code */}
             {method === 'pix' && currentStatus.point_of_interaction?.transaction_data?.qr_code_base64 && (
               <div className="flex flex-col items-center gap-3 mt-4">
                 <img
@@ -309,12 +374,17 @@ export default function Pagamento() {
                   alt="QR Code PIX"
                   className="w-44 h-44 rounded-xl border border-gray-100"
                 />
-                <p className="text-xs text-gray-500 text-center">Escaneie o QR Code no seu app de pagamento</p>
+                <p className="text-xs text-gray-500 text-center">
+                  Escaneie o QR Code no seu app de pagamento
+                </p>
+
                 {currentStatus.point_of_interaction.transaction_data.qr_code && (
                   <button
-                    onClick={() => navigator.clipboard.writeText(
-                      currentStatus!.point_of_interaction!.transaction_data!.qr_code!
-                    )}
+                    onClick={() =>
+                      navigator.clipboard.writeText(
+                        currentStatus.point_of_interaction?.transaction_data?.qr_code || '',
+                      )
+                    }
                     className="text-xs font-semibold text-[#1A2E17] underline underline-offset-2"
                   >
                     Copiar código PIX
@@ -325,11 +395,13 @@ export default function Pagamento() {
           </div>
         )}
 
-        {/* Formulário de pagamento (exibido antes de criar o pagamento) */}
         {!payment && (
-          <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 py-6">
-            {/* Seleção de método */}
+          <form
+            onSubmit={handleSubmit}
+            className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 py-6"
+          >
             <p className="font-bold text-sm text-[#1A1A1A] mb-4">Método de pagamento</p>
+
             <div className="grid grid-cols-2 gap-3 mb-6">
               {([
                 { id: 'credit_card', label: 'Cartão', icon: CreditCard },
@@ -351,10 +423,11 @@ export default function Pagamento() {
               ))}
             </div>
 
-            {/* Campos comuns */}
             <div className="flex flex-col gap-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1.5">E-mail do pagador</label>
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5">
+                  E-mail do pagador
+                </label>
                 <input
                   type="email"
                   required
@@ -364,6 +437,7 @@ export default function Pagamento() {
                   className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#1A2E17] transition-all"
                 />
               </div>
+
               <div>
                 <label className="block text-xs font-semibold text-gray-500 mb-1.5">CPF</label>
                 <input
@@ -376,11 +450,12 @@ export default function Pagamento() {
                 />
               </div>
 
-              {/* Campos específicos do cartão */}
               {method === 'credit_card' && (
                 <>
                   <div>
-                    <label className="block text-xs font-semibold text-gray-500 mb-1.5">Número do cartão</label>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1.5">
+                      Número do cartão
+                    </label>
                     <input
                       type="text"
                       required
@@ -391,8 +466,11 @@ export default function Pagamento() {
                       className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-mono tracking-widest focus:outline-none focus:border-[#1A2E17] transition-all"
                     />
                   </div>
+
                   <div>
-                    <label className="block text-xs font-semibold text-gray-500 mb-1.5">Nome no cartão</label>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1.5">
+                      Nome no cartão
+                    </label>
                     <input
                       type="text"
                       required
@@ -402,9 +480,12 @@ export default function Pagamento() {
                       className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm uppercase tracking-wide focus:outline-none focus:border-[#1A2E17] transition-all"
                     />
                   </div>
+
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-semibold text-gray-500 mb-1.5">Validade</label>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1.5">
+                        Validade
+                      </label>
                       <input
                         type="text"
                         required
@@ -415,8 +496,11 @@ export default function Pagamento() {
                         className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-mono focus:outline-none focus:border-[#1A2E17] transition-all"
                       />
                     </div>
+
                     <div>
-                      <label className="block text-xs font-semibold text-gray-500 mb-1.5">CVV</label>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1.5">
+                        CVV
+                      </label>
                       <input
                         type="text"
                         required
@@ -432,7 +516,6 @@ export default function Pagamento() {
               )}
             </div>
 
-            {/* Erro */}
             {error && (
               <div className="mt-4 flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
                 <XCircle size={16} className="text-red-500 mt-0.5 shrink-0" />
@@ -440,18 +523,22 @@ export default function Pagamento() {
               </div>
             )}
 
-            {/* Botão de pagamento */}
             <button
               type="submit"
               disabled={loading}
               className="mt-6 w-full flex items-center justify-center gap-2 bg-[#1A2E17] hover:bg-[#243d20] disabled:opacity-60 text-white font-bold py-3.5 rounded-xl transition-all hover:-translate-y-0.5"
             >
               {loading ? (
-                <><Loader2 size={18} className="animate-spin" /> Processando...</>
+                <>
+                  <Loader2 size={18} className="animate-spin" /> Processando...
+                </>
               ) : (
-                <><CreditCard size={18} /> Pagar {formatCurrency(checkoutData.total)}</>
+                <>
+                  <CreditCard size={18} /> Pagar {formatCurrency(checkoutData.total)}
+                </>
               )}
             </button>
+
             <p className="text-center text-xs text-gray-400 mt-3">
               Seus dados são protegidos pelo Mercado Pago 🔒
             </p>
@@ -459,5 +546,5 @@ export default function Pagamento() {
         )}
       </div>
     </div>
-  );
+  )
 }
