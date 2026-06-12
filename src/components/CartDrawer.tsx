@@ -13,7 +13,7 @@ function formatMeat(point?: string) {
 
 export default function CartDrawer() {
   const { state, closeCart, removeFromCart, updateQty, clearCart, totalPrice } = useCart();
-  const { isOpen, items, address, customerName } = state;
+  const { isCartOpen, items, address, customerName } = state;
   const navigate = useNavigate();
 
   function handleFinalizarPedido() {
@@ -26,7 +26,7 @@ export default function CartDrawer() {
     navigate('/pagamento');
   }
 
-  if (!isOpen) return null;
+  if (!isCartOpen) return null;
 
   return (
     <>
@@ -68,7 +68,9 @@ export default function CartDrawer() {
         {/* Endereço */}
         {address && (
           <div className="px-5 pb-2 flex items-center gap-2">
-            <span className="text-xs text-gray-400 truncate">{address}</span>
+            <span className="text-xs text-gray-400 truncate">
+              📍 {address.street}, {address.number} — {address.neighborhood}
+            </span>
             <Pencil size={12} className="text-gray-400 shrink-0" />
           </div>
         )}
@@ -95,12 +97,12 @@ export default function CartDrawer() {
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-bold text-[#1A1A1A] truncate">{ci.item.name}</p>
-                  {ci.meat && (
-                    <p className="text-xs text-gray-400">{formatMeat(ci.meat)}</p>
+                  {ci.meatPoint && (
+                    <p className="text-xs text-gray-400">{formatMeat(ci.meatPoint)}</p>
                   )}
-                  {ci.extras && ci.extras.length > 0 && (
+                  {ci.additionals && ci.additionals.length > 0 && (
                     <p className="text-xs text-gray-400">
-                      + {ci.extras.map(e => e.name).join(', ')}
+                      + {ci.additionals.map(e => e.name).join(', ')}
                     </p>
                   )}
                   <p className="text-xs font-semibold text-[#C4A044] mt-0.5">
